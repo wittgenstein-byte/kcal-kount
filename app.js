@@ -571,17 +571,52 @@ async function analyzeFood(base64DataUrl) {
 
   if (!response.ok) {
     const errText = await response.text();
+    console.error('[AI Scan] API error response:', errText);
     throw new Error(`API error ${response.status}: ${errText.slice(0, 120)}`);
   }
 
   const data = await response.json();
+  console.log('[AI Scan] Full API response:', JSON.stringify(data, null, 2));
+
   const rawContent = data?.choices?.[0]?.message?.content || '';
+  console.log('[AI Scan] Raw content:', rawContent);
 
-  // Extract JSON from the response (in case model wraps it in markdown)
-  const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('Could not parse AI response as JSON.');
+  // Try multiple strategies to extract JSON from the response
+  let parsed = null;
 
-  const parsed = JSON.parse(jsonMatch[0]);
+  // Strategy 1: Strip markdown code fences (```json ... ``` or ``` ... ```)
+  const fenceMatch = rawContent.match(/```(?:json)?\s*\n?([\s\S]*?)\n?\s*```/);
+  if (fenceMatch) {
+    try {
+      parsed = JSON.parse(fenceMatch[1].trim());
+      console.log('[AI Scan] Parsed via markdown fence strategy');
+    } catch (e) { /* try next */ }
+  }
+
+  // Strategy 2: Find first { ... } block (greedy)
+  if (!parsed) {
+    const braceMatch = rawContent.match(/\{[\s\S]*\}/);
+    if (braceMatch) {
+      try {
+        parsed = JSON.parse(braceMatch[0]);
+        console.log('[AI Scan] Parsed via brace extraction strategy');
+      } catch (e) { /* try next */ }
+    }
+  }
+
+  // Strategy 3: The entire content might be valid JSON
+  if (!parsed) {
+    try {
+      parsed = JSON.parse(rawContent.trim());
+      console.log('[AI Scan] Parsed entire content as JSON');
+    } catch (e) { /* give up */ }
+  }
+
+  if (!parsed) {
+    console.error('[AI Scan] Could not parse response. Raw:', rawContent);
+    throw new Error(`Could not parse AI response. Raw: "${rawContent.slice(0, 200)}"`);
+  }
+
   return {
     menu: parsed.menu || 'Unknown food',
     protein: Math.round(parsed.protein_g ?? 0),
