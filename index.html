@@ -449,6 +449,13 @@
       <div id="camera-step-preview" class="camera-step">
         <div class="camera-viewfinder">
           <video id="camera-video" class="camera-video" autoplay playsinline muted></video>
+          <div id="camera-fallback" class="camera-fallback hidden">
+            <div class="camera-fallback-content">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="fallback-icon"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              <p class="fallback-title">Camera Unavailable</p>
+              <span class="fallback-sub">You can still upload a photo to analyze your food</span>
+            </div>
+          </div>
           <div class="camera-frame-guide">
             <div class="frame-corner frame-tl"></div>
             <div class="frame-corner frame-tr"></div>
@@ -458,10 +465,14 @@
           <p class="camera-hint">Point camera at your food 🍽️</p>
         </div>
         <div class="camera-controls">
-          <button id="capture-btn" class="capture-shutter-btn" aria-label="Capture photo">
+          <button type="button" id="upload-img-btn" class="upload-img-btn" aria-label="Upload photo" title="Upload Photo">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;display:block;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          </button>
+          <button type="button" id="capture-btn" class="capture-shutter-btn" aria-label="Capture photo">
             <span class="shutter-ring"></span>
             <span class="shutter-inner"></span>
           </button>
+          <input type="file" id="camera-file-input" accept="image/*" style="display: none;">
         </div>
       </div>
 

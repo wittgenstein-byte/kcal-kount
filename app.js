@@ -364,12 +364,18 @@ function setupEventListeners() {
   // Camera modal controls
   const closeCameraBtn = document.getElementById('close-camera-modal');
   const captureBtn = document.getElementById('capture-btn');
+  const uploadImgBtn = document.getElementById('upload-img-btn');
+  const cameraFileInput = document.getElementById('camera-file-input');
   const retakeBtn = document.getElementById('retake-btn');
   const scanConfirmBtn = document.getElementById('scan-confirm-btn');
   const cameraModal = document.getElementById('camera-modal');
 
   if (closeCameraBtn) closeCameraBtn.addEventListener('click', () => closeCameraModal());
   if (captureBtn) captureBtn.addEventListener('click', () => captureFrame());
+  if (uploadImgBtn && cameraFileInput) {
+    uploadImgBtn.addEventListener('click', () => cameraFileInput.click());
+    cameraFileInput.addEventListener('change', (e) => handleImageUpload(e));
+  }
   if (retakeBtn) retakeBtn.addEventListener('click', () => retakePhoto());
   if (scanConfirmBtn) scanConfirmBtn.addEventListener('click', () => confirmAndScan());
   if (cameraModal) {
@@ -421,6 +427,16 @@ async function openCameraModal() {
   closeModal(modal);
   modal.classList.remove('hidden');
 
+  // Reset UI elements to default camera state first
+  document.getElementById('camera-fallback')?.classList.add('hidden');
+  document.getElementById('camera-video')?.classList.remove('hidden');
+  const frameGuide = document.querySelector('.camera-frame-guide');
+  if (frameGuide) frameGuide.classList.remove('hidden');
+  const hintEl = document.querySelector('.camera-hint');
+  if (hintEl) hintEl.classList.remove('hidden');
+  const captureBtn = document.getElementById('capture-btn');
+  if (captureBtn) captureBtn.classList.remove('hidden');
+
   try {
     _cameraStream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
@@ -428,8 +444,16 @@ async function openCameraModal() {
     });
     video.srcObject = _cameraStream;
   } catch (err) {
-    showToast('Camera access denied or unavailable.', 'warning');
-    closeModal(modal);
+    console.warn('Camera access failed:', err);
+    // Show fallback instead of closing the modal
+    document.getElementById('camera-fallback')?.classList.remove('hidden');
+    document.getElementById('camera-video')?.classList.add('hidden');
+    const frameGuide = document.querySelector('.camera-frame-guide');
+    if (frameGuide) frameGuide.classList.add('hidden');
+    const hintEl = document.querySelector('.camera-hint');
+    if (hintEl) hintEl.classList.add('hidden');
+    const captureBtn = document.getElementById('capture-btn');
+    if (captureBtn) captureBtn.classList.add('hidden');
     stopCameraStream();
   }
 }
@@ -480,19 +504,75 @@ function captureFrame() {
   stopCameraStream();
 }
 
+function handleImageUpload(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(event) {
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.getElementById('camera-canvas');
+      if (!canvas) return;
+
+      const MAX_W = 800;
+      const MAX_H = 600;
+      let w = img.width;
+      let h = img.height;
+      const ratio = Math.min(MAX_W / w, MAX_H / h, 1);
+      canvas.width = Math.round(w * ratio);
+      canvas.height = Math.round(h * ratio);
+
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      _capturedBase64 = canvas.toDataURL('image/jpeg', 0.8);
+
+      showCameraStep('confirm');
+      stopCameraStream();
+      
+      // Clear file input value so we can upload the same image again if needed
+      e.target.value = '';
+    };
+    img.src = event.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
 function retakePhoto() {
   _capturedBase64 = null;
   showCameraStep('preview');
 
   const video = document.getElementById('camera-video');
   if (video) {
+    // Reset UI to default camera state first
+    document.getElementById('camera-fallback')?.classList.add('hidden');
+    document.getElementById('camera-video')?.classList.remove('hidden');
+    const frameGuide = document.querySelector('.camera-frame-guide');
+    if (frameGuide) frameGuide.classList.remove('hidden');
+    const hintEl = document.querySelector('.camera-hint');
+    if (hintEl) hintEl.classList.remove('hidden');
+    const captureBtn = document.getElementById('capture-btn');
+    if (captureBtn) captureBtn.classList.remove('hidden');
+
     navigator.mediaDevices.getUserMedia({
       video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
       audio: false
     }).then(stream => {
       _cameraStream = stream;
       video.srcObject = stream;
-    }).catch(() => showToast('Camera restart failed.', 'warning'));
+    }).catch(err => {
+      console.warn('Camera restart failed:', err);
+      // Fallback state
+      document.getElementById('camera-fallback')?.classList.remove('hidden');
+      document.getElementById('camera-video')?.classList.add('hidden');
+      const frameGuide = document.querySelector('.camera-frame-guide');
+      if (frameGuide) frameGuide.classList.add('hidden');
+      const hintEl = document.querySelector('.camera-hint');
+      if (hintEl) hintEl.classList.add('hidden');
+      const captureBtn = document.getElementById('capture-btn');
+      if (captureBtn) captureBtn.classList.add('hidden');
+      stopCameraStream();
+    });
   }
 }
 
