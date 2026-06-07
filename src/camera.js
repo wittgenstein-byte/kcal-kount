@@ -246,8 +246,8 @@ async function processImageFile(file) {
       return;
     }
 
-    const MAX_W = 600;
-    const MAX_H = 450;
+    const MAX_W = 1024;
+    const MAX_H = 1024;
     let w = img.width;
     let h = img.height;
     const ratio = Math.min(MAX_W / w, MAX_H / h, 1);
