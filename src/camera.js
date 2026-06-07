@@ -2,9 +2,79 @@ import { state, saveAiSettings } from './state.js';
 import { showToast, openModal, closeModal, prefillMealModalFromScan } from './ui.js';
 
 let _capturedBase64 = null;
+let _stream = null;
 
 function slugify(str) {
   return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+}
+
+async function startVideoStream() {
+  const video = document.getElementById('camera-video');
+  const prompt = document.querySelector('.camera-capture-prompt');
+  if (!video) return;
+
+  try {
+    const constraints = {
+      video: {
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+        facingMode: "environment"
+      },
+      audio: false
+    };
+    _stream = await navigator.mediaDevices.getUserMedia(constraints);
+    video.srcObject = _stream;
+    video.classList.remove('hidden');
+    if (prompt) prompt.classList.add('hidden');
+  } catch (err) {
+    console.warn('Could not start video stream:', err);
+    if (video) video.classList.add('hidden');
+    if (prompt) prompt.classList.remove('hidden');
+    showToast('Could not access camera. Please select a photo from your gallery.', 'info');
+  }
+}
+
+function stopVideoStream() {
+  if (_stream) {
+    _stream.getTracks().forEach(track => track.stop());
+    _stream = null;
+  }
+  const video = document.getElementById('camera-video');
+  if (video) {
+    video.srcObject = null;
+    video.classList.add('hidden');
+  }
+  const prompt = document.querySelector('.camera-capture-prompt');
+  if (prompt) prompt.classList.remove('hidden');
+}
+
+function captureVideoFrame() {
+  const video = document.getElementById('camera-video');
+  const canvas = document.getElementById('camera-canvas');
+  if (!video || !canvas) return;
+
+  const MAX_W = 600;
+  const MAX_H = 450;
+  let w = video.videoWidth || video.width;
+  let h = video.videoHeight || video.height;
+  if (!w || !h) return;
+
+  const ratio = Math.min(MAX_W / w, MAX_H / h, 1);
+  canvas.width = Math.round(w * ratio);
+  canvas.height = Math.round(h * ratio);
+
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  _capturedBase64 = canvas.toDataURL('image/jpeg', 0.75);
+
+  stopVideoStream();
+
+  const modal = document.getElementById('camera-modal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.setAttribute('aria-hidden', 'false');
+  }
+  showCameraStep('confirm');
 }
 
 /**
@@ -31,12 +101,15 @@ export function openCameraModal() {
   showCameraStep('preview');
   modal.classList.remove('hidden');
   modal.setAttribute('aria-hidden', 'false');
+
+  startVideoStream();
 }
 
 export function closeCameraModal() {
   const modal = document.getElementById('camera-modal');
   if (modal) closeModal(modal);
   _capturedBase64 = null;
+  stopVideoStream();
 
   // Reset canvas to free memory
   const canvas = document.getElementById('camera-canvas');
@@ -182,8 +255,7 @@ function retakePhoto() {
     canvas.height = 1;
   }
 
-  // Re-trigger the native camera
-  triggerNativeCamera();
+  startVideoStream();
 }
 
 async function confirmAndScan() {
@@ -739,7 +811,17 @@ export function setupCameraListeners() {
 
   if (closeCameraBtn) closeCameraBtn.addEventListener('click', () => closeCameraModal());
 
-  // Shutter button (capture="environment") change listener
+  // Shutter button (capture="environment") click/change listener
+  if (captureBtn) {
+    captureBtn.addEventListener('click', () => {
+      if (_stream) {
+        captureVideoFrame();
+      } else if (cameraCaptureInput) {
+        cameraCaptureInput.click();
+      }
+    });
+  }
+
   if (cameraCaptureInput) {
     cameraCaptureInput.addEventListener('change', async (e) => {
       if (e.target.files?.[0]) {

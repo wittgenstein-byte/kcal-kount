@@ -461,10 +461,11 @@
 
       <!-- Step 1: Capture / Upload -->
       <div id="camera-step-preview" class="camera-step">
-        <div class="camera-viewfinder">
+        <div class="camera-viewfinder" style="position: relative; overflow: hidden; background: #000; display: flex; align-items: center; justify-content: center;">
+          <video id="camera-video" autoplay playsinline class="hidden" style="width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0;"></video>
           <div class="camera-capture-prompt">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="fallback-icon">
-              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
               <circle cx="12" cy="13" r="4"/>
             </svg>
             <p class="fallback-title">Scan Your Food</p>
@@ -480,12 +481,13 @@
             <input type="file" id="camera-file-input" accept="image/*, .heic, .heif" style="position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; z-index: 10;">
           </label>
 
-          <!-- Shutter button styled as a label enclosing the capture input for native camera gesture trigger -->
-          <label id="capture-btn" class="capture-shutter-btn" aria-label="Take photo with camera" style="position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+          <!-- Shutter button for capturing from video stream or falling back to file input -->
+          <button type="button" id="capture-btn" class="capture-shutter-btn" aria-label="Take photo with camera">
             <span class="shutter-ring"></span>
             <span class="shutter-inner"></span>
-            <input type="file" id="camera-capture-input" accept="image/*, .heic, .heif" capture="environment" style="position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; z-index: 10;">
-          </label>
+          </button>
+          
+          <input type="file" id="camera-capture-input" accept="image/*, .heic, .heif" capture="environment" style="display: none;">
         </div>
       </div>
 
