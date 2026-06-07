@@ -1518,6 +1518,80 @@ input:focus, select:focus {
 .frame-bl { bottom: 14px; left: 14px; border-bottom-width: 3px; border-left-width: 3px; border-radius: 0 0 0 4px; }
 .frame-br { bottom: 14px; right: 14px; border-bottom-width: 3px; border-right-width: 3px; border-radius: 0 0 4px 0; }
 
+/* Faint cutout scan guide overlay */
+.camera-guide-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: none; /* Shown only when video is active */
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+}
+
+.camera-guide-overlay.active {
+  display: flex;
+}
+
+.camera-guide-box {
+  position: relative;
+  height: 80%;
+  aspect-ratio: 1 / 1;
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  border-radius: 16px;
+  /* Cutout effect: darkens everything outside the guide box */
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.camera-confirm-viewfinder {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background-color: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+/* Bright corner indicators for the guide box */
+.guide-corner {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-color: var(--color-primary, #8b5cf6);
+  border-style: solid;
+  border-width: 0;
+}
+
+.guide-tl { top: -2px; left: -2px; border-top-width: 3px; border-left-width: 3px; border-top-left-radius: 8px; }
+.guide-tr { top: -2px; right: -2px; border-top-width: 3px; border-right-width: 3px; border-top-right-radius: 8px; }
+.guide-bl { bottom: -2px; left: -2px; border-bottom-width: 3px; border-left-width: 3px; border-bottom-left-radius: 8px; }
+.guide-br { bottom: -2px; right: -2px; border-bottom-width: 3px; border-right-width: 3px; border-bottom-right-radius: 8px; }
+
+.camera-guide-text {
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+  padding: 4px 10px;
+  border-radius: 12px;
+  background-color: rgba(20, 20, 20, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(4px);
+  box-shadow: var(--shadow-sm);
+  letter-spacing: 0.025em;
+  transform: translateY(0);
+  animation: pulse-subtle 2s infinite ease-in-out;
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 0.85; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.02); }
+}
+
 .camera-hint {
   position: absolute;
   bottom: 0;
@@ -1879,6 +1953,118 @@ input:focus, select:focus {
     width: 56px;
     height: 56px;
     justify-content: center;
+  }
+}
+
+/* Immersive Mobile Full-screen Camera UI */
+@media (max-width: 576px) {
+  #camera-modal {
+    padding: 0 !important;
+  }
+  
+  #camera-modal .camera-modal-card {
+    max-width: 100% !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    border-radius: 0 !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    background-color: #000 !important;
+    box-shadow: none !important;
+  }
+
+  /* Transparent header overlay at the top */
+  #camera-modal .modal-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    padding: 1.25rem 1.25rem 2rem 1.25rem !important;
+    margin-bottom: 0 !important;
+    border-bottom: none !important;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.7) 30%, rgba(0, 0, 0, 0));
+  }
+  
+  #camera-modal #camera-modal-title {
+    color: #fff !important;
+    font-size: 1.15rem !important;
+    font-weight: 600 !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  }
+  
+  #camera-modal .close-btn {
+    color: #fff !important;
+    background: rgba(255, 255, 255, 0.2) !important;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    line-height: 1;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    margin: 0;
+  }
+
+  /* Make steps fill the entire modal screen */
+  #camera-modal .camera-step {
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  #camera-modal .camera-step.hidden {
+    display: none !important;
+  }
+
+  /* Viewfinders take up full viewport height */
+  #camera-modal .camera-viewfinder,
+  #camera-modal .camera-confirm-viewfinder {
+    flex: 1 !important;
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 0 !important;
+    margin-bottom: 0 !important;
+    aspect-ratio: auto !important;
+  }
+
+  #camera-modal .camera-video,
+  #camera-modal .camera-canvas {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+  }
+
+  /* Re-scale framing guide box to viewport width for mobile portrait */
+  .camera-guide-box {
+    width: 80% !important;
+    height: auto !important;
+    aspect-ratio: 1 / 1 !important;
+  }
+
+  /* Controls and action buttons overlay at the bottom */
+  #camera-modal .camera-controls,
+  #camera-modal .camera-confirm-actions {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 60%, rgba(0, 0, 0, 0));
+    padding: 2.5rem 1.5rem 3.5rem 1.5rem !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: space-around !important;
+    border-top: none !important;
   }
 }
 
