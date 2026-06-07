@@ -159,7 +159,7 @@ Example response:
         ]
       }
     ],
-    max_tokens: 256,
+    max_tokens: 2048,
     temperature: 0.1
   };
 
@@ -604,7 +604,7 @@ async function repairWithLLM(rawText, model) {
       model,
       response_format: { type: 'json_object' },
       messages,
-      max_tokens: 256,
+      max_tokens: 2048,
       temperature: 0,
     }),
   });
@@ -617,7 +617,7 @@ async function repairWithLLM(rawText, model) {
       body: JSON.stringify({
         model,
         messages,
-        max_tokens: 256,
+        max_tokens: 2048,
         temperature: 0,
       }),
     });
