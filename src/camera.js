@@ -155,16 +155,18 @@ function showCameraStep(step) {
 async function processImageFile(file) {
   if (!file) return;
 
-  // 1) Guard: Reject files larger than 8MB to prevent OOM on mobile
-  const MAX_FILE_BYTES = 8 * 1024 * 1024;
+  // 1) Guard: Reject files larger than 15MB to prevent OOM on mobile
+  const MAX_FILE_BYTES = 15 * 1024 * 1024;
   if (file.size > MAX_FILE_BYTES) {
-    showToast('Image too large (max 8MB). Please upload a smaller photo.', 'warning');
+    showToast('Image too large (max 15MB). Please upload a smaller photo.', 'warning');
     return;
   }
 
   const isHeic = file.name?.toLowerCase().endsWith('.heic') || file.name?.toLowerCase().endsWith('.heif') || file.type === 'image/heic' || file.type === 'image/heif';
   
   let targetFile = file;
+  let alreadyResized = false;
+
   if (isHeic) {
     showToast('Processing HEIC image...', 'info');
     try {
@@ -195,6 +197,7 @@ async function processImageFile(file) {
       targetFile = new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
         type: 'image/jpeg'
       });
+      alreadyResized = true;
       console.log('[HEIC] Native decode successful');
     } catch (nativeErr) {
       console.warn('[HEIC] Native decode failed, trying heic2any fallback:', nativeErr);
@@ -214,6 +217,23 @@ async function processImageFile(file) {
         showToast('HEIC conversion failed. In Camera settings, please change format to JPEG.', 'warning');
         return;
       }
+    }
+  }
+
+  // 3) Compress image if it hasn't been resized yet
+  if (!alreadyResized) {
+    try {
+      showToast('Optimizing image...', 'info');
+      const imageCompression = (await import('browser-image-compression')).default;
+      const options = {
+        maxSizeMB: 0.1,          // Target size ~100KB
+        maxWidthOrHeight: 800,   // Max dimension 800px
+        useWebWorker: true
+      };
+      targetFile = await imageCompression(targetFile, options);
+      console.log('[Compression] Compression successful. Compressed size:', targetFile.size);
+    } catch (compressErr) {
+      console.warn('[Compression] Compression failed, using original/converted file:', compressErr);
     }
   }
 
