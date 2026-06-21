@@ -144,9 +144,9 @@ export function renderDailyLog() {
       if (item.protein != null || item.fat != null || item.carb != null) {
         macroPillsHtml = `
           <div class="item-macro-pills">
-            <span class="macro-pill macro-pill--protein">P: <strong>${item.protein ?? '--'}g</strong></span>
-            <span class="macro-pill macro-pill--fat">F: <strong>${item.fat ?? '--'}g</strong></span>
-            <span class="macro-pill macro-pill--carb">C: <strong>${item.carb ?? '--'}g</strong></span>
+            <span class="macro-pill macro-pill--protein">P: <strong>${escapeHtml(String(item.protein ?? '--'))}g</strong></span>
+            <span class="macro-pill macro-pill--fat">F: <strong>${escapeHtml(String(item.fat ?? '--'))}g</strong></span>
+            <span class="macro-pill macro-pill--carb">C: <strong>${escapeHtml(String(item.carb ?? '--'))}g</strong></span>
             ${item.aiScanned ? '<span class="macro-pill macro-pill--ai">\u2728 AI</span>' : ''}
           </div>
         `;
