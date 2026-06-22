@@ -1,6 +1,7 @@
 import ApexCharts from 'apexcharts';
 
 let chartInstance = null;
+let lastChartConfig = null;
 
 /**
  * Destroys the current chart instance if it exists.
@@ -9,11 +10,13 @@ export function destroyChart() {
   if (chartInstance) {
     chartInstance.destroy();
     chartInstance = null;
+    lastChartConfig = null;
   }
 }
 
 /**
  * Renders or updates the calorie intake trend chart using ApexCharts.
+ * Includes optimization to skip re-render if data hasn't changed.
  * 
  * @param {string} chartContainerSelector - Selector for the chart container.
  * @param {Array} labels - X-axis categories (dates).
@@ -22,6 +25,15 @@ export function destroyChart() {
  * @param {string} theme - Active color theme ('light'|'dark').
  */
 export function renderCalorieChart(chartContainerSelector, labels, values, tdeeGoal, theme) {
+  // Create a config signature to detect changes
+  const configSignature = JSON.stringify({ labels, values, tdeeGoal, theme });
+  
+  // Skip re-render if config hasn't changed
+  if (lastChartConfig === configSignature && chartInstance) {
+    return;
+  }
+  
+  lastChartConfig = configSignature;
   destroyChart();
   
   const chartEl = document.querySelector(chartContainerSelector);

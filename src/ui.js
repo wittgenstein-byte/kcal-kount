@@ -1,6 +1,26 @@
 import { state, getLocalDateString } from './state.js';
 import { renderCalorieChart } from './chart.js';
 
+// Cache for DOM element lookups to avoid repeated queries
+const domCache = new Map();
+
+/**
+ * Get element by ID with caching for better performance
+ */
+function getCachedElement(id) {
+  if (!domCache.has(id)) {
+    domCache.set(id, document.getElementById(id));
+  }
+  return domCache.get(id);
+}
+
+/**
+ * Clear DOM cache (useful when DOM structure changes)
+ */
+export function clearDomCache() {
+  domCache.clear();
+}
+
 // SECURE ESCAPE HTML TO PREVENT XSS
 export function escapeHtml(str) {
   if (typeof str !== 'string') return str;
@@ -18,28 +38,46 @@ export function escapeHtml(str) {
 
 // DATE FORMATTING
 export function formatDateFriendly(dateStr) {
+  // Check cache first
+  if (dateFormatCache.has(dateStr)) {
+    return dateFormatCache.get(dateStr);
+  }
+
   const todayStr = getLocalDateString();
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
   const yesterdayStr = getLocalDateString(yesterday);
 
-  if (dateStr === todayStr) return 'Today';
-  if (dateStr === yesterdayStr) return 'Yesterday';
+  let result;
+  if (dateStr === todayStr) {
+    result = 'Today';
+  } else if (dateStr === yesterdayStr) {
+    result = 'Yesterday';
+  } else {
+    const parts = dateStr.split('-');
+    const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
+    
+    result = dateObj.toLocaleDateString('en-US', { 
+      weekday: 'short', 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    });
+  }
 
-  const parts = dateStr.split('-');
-  const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
-  
-  return dateObj.toLocaleDateString('en-US', { 
-    weekday: 'short', 
-    month: 'short', 
-    day: 'numeric', 
-    year: 'numeric' 
-  });
+  // Cache the result (limit cache size to prevent memory leaks)
+  if (dateFormatCache.size > 100) {
+    const firstKey = dateFormatCache.keys().next().value;
+    dateFormatCache.delete(firstKey);
+  }
+  dateFormatCache.set(dateStr, result);
+
+  return result;
 }
 
 // TOAST NOTIFICATIONS
 export function showToast(message, type = 'success') {
-  const container = document.getElementById('toast-container');
+  const container = getCachedElement('toast-container');
   if (!container) return;
 
   const toast = document.createElement('div');
@@ -84,13 +122,16 @@ export function closeModal(modalEl) {
 
 // DOM RENDERING
 export function renderTdeeInputs() {
-  document.getElementById('manual-goal-input').value = state.tdeeGoal;
-  document.getElementById('goal-display').textContent = state.tdeeGoal.toLocaleString();
+  const manualGoalInput = getCachedElement('manual-goal-input');
+  const goalDisplay = getCachedElement('goal-display');
+  
+  if (manualGoalInput) manualGoalInput.value = state.tdeeGoal;
+  if (goalDisplay) goalDisplay.textContent = state.tdeeGoal.toLocaleString();
 
-  const toggleManualBtn = document.getElementById('toggle-manual-btn');
-  const toggleCalcBtn = document.getElementById('toggle-calc-btn');
-  const manualFormWrapper = document.getElementById('manual-goal-form-wrapper');
-  const calcFormWrapper = document.getElementById('tdee-calc-form-wrapper');
+  const toggleManualBtn = getCachedElement('toggle-manual-btn');
+  const toggleCalcBtn = getCachedElement('toggle-calc-btn');
+  const manualFormWrapper = getCachedElement('manual-goal-form-wrapper');
+  const calcFormWrapper = getCachedElement('tdee-calc-form-wrapper');
 
   if (!toggleManualBtn || !toggleCalcBtn || !manualFormWrapper || !calcFormWrapper) return;
 
@@ -110,22 +151,30 @@ export function renderTdeeInputs() {
 
 export function populateTdeeCalculatorForm() {
   const settings = state.tdeeSettings;
-  if (settings.gender === 'female') {
-    document.getElementById('gender-female').checked = true;
-  } else {
-    document.getElementById('gender-male').checked = true;
+  const genderFemale = getCachedElement('gender-female');
+  const genderMale = getCachedElement('gender-male');
+  
+  if (genderFemale && genderMale) {
+    genderFemale.checked = settings.gender === 'female';
+    genderMale.checked = settings.gender !== 'female';
   }
 
-  if (settings.age) document.getElementById('calc-age').value = settings.age;
-  if (settings.weight) document.getElementById('calc-weight').value = settings.weight;
-  if (settings.height) document.getElementById('calc-height').value = settings.height;
-  if (settings.activityLevel) document.getElementById('calc-activity').value = settings.activityLevel;
-  if (settings.objective) document.getElementById('calc-objective').value = settings.objective;
+  const calcAge = getCachedElement('calc-age');
+  const calcWeight = getCachedElement('calc-weight');
+  const calcHeight = getCachedElement('calc-height');
+  const calcActivity = getCachedElement('calc-activity');
+  const calcObjective = getCachedElement('calc-objective');
+
+  if (settings.age && calcAge) calcAge.value = settings.age;
+  if (settings.weight && calcWeight) calcWeight.value = settings.weight;
+  if (settings.height && calcHeight) calcHeight.value = settings.height;
+  if (settings.activityLevel && calcActivity) calcActivity.value = settings.activityLevel;
+  if (settings.objective && calcObjective) calcObjective.value = settings.objective;
 }
 
 export function renderDailyLog() {
   const dailyEntries = state.entries.filter(e => e.date === state.currentDate);
-  const listEl = document.getElementById('meal-list');
+  const listEl = getCachedElement('meal-list');
   if (!listEl) return;
   listEl.innerHTML = '';
 

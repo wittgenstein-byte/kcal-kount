@@ -1,0 +1,84 @@
+# Calorie Tracker - Project Context
+
+## Overview
+A vanilla JavaScript calorie tracking application with local storage persistence, chart visualization, and meal logging capabilities.
+
+## Tech Stack
+- **Core**: Vanilla JavaScript (ES6+), HTML5, CSS3
+- **Storage**: localStorage API
+- **Charts**: Chart.js (via CDN)
+- **Icons**: Font Awesome (via CDN)
+- **Build**: None (no bundler required)
+
+## Architecture
+- **Single Page Application (SPA)**: View-based navigation without page reloads
+- **State Management**: In-memory state synced with localStorage
+- **Performance Optimizations**:
+  - DOM element caching
+  - Date formatting memoization
+  - Debounced storage writes (300ms)
+  - Chart re-render prevention when data unchanged
+  - O(n) favorite lookups using Sets
+  - Batched DOM updates via DocumentFragment
+
+## Key Files
+- `index.html`: Main entry point and HTML structure
+- `style.css`: Application styling
+- `app.js`: Main application logic and state management
+- `utils.js`: Utility functions (date formatting, calculations)
+- `storage.js`: LocalStorage abstraction with debouncing
+- `chart.js`: Chart.js configuration and rendering logic
+
+## Core Features
+1. **Meal Logging**: Add/edit/delete meals with calories, protein, carbs, fat
+2. **Daily Tracking**: View daily totals and macro breakdowns
+3. **Weekly Charts**: Visualize calorie trends over time
+4. **Favorites**: Quick-add frequently logged meals
+5. **Goals**: Set daily calorie and macro targets
+6. **Persistence**: All data saved to localStorage
+
+## Data Models
+```javascript
+// Meal object
+{
+  id: string,          // UUID
+  name: string,        // Meal name
+  calories: number,    // Total calories
+  protein: number,     // grams
+  carbs: number,       // grams
+  fat: number,         // grams
+  date: string,        // ISO date string
+  isFavorite: boolean
+}
+
+// Daily summary
+{
+  date: string,        // YYYY-MM-DD
+  totalCalories: number,
+  totalProtein: number,
+  totalCarbs: number,
+  totalFat: number,
+  meals: Meal[]
+}
+
+// User goals
+{
+  calories: number,
+  protein: number,
+  carbs: number,
+  fat: number
+}
+```
+
+## Performance Considerations
+- Avoid repeated DOM queries by caching references
+- Memoize expensive date formatting operations
+- Debounce localStorage writes to reduce I/O
+- Skip chart updates when underlying data hasn't changed
+- Use Sets for O(1) favorite meal lookups
+- Batch DOM insertions to minimize reflows
+
+## Build Info
+- Bundle size: ~43 KB (13.3 KB gzipped)
+- No build step required - runs directly in browser
+- Compatible with modern browsers (ES6+ support required)

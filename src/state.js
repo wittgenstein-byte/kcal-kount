@@ -6,6 +6,9 @@ export function getLocalDateString(date = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
+// Memoization cache for formatDateFriendly
+const dateFormatCache = new Map();
+
 export let state = {
   entries: [],
   favorites: [],
@@ -26,12 +29,22 @@ export let state = {
   modelName: 'gemini-3.5-flash'
 };
 
+// Debounce timer for localStorage saves
+let saveDebounceTimer = null;
+const SAVE_DEBOUNCE_MS = 300;
+
 export function saveEntries() {
-  localStorage.setItem('kcal_tracker_entries', JSON.stringify(state.entries));
+  clearTimeout(saveDebounceTimer);
+  saveDebounceTimer = setTimeout(() => {
+    localStorage.setItem('kcal_tracker_entries', JSON.stringify(state.entries));
+  }, SAVE_DEBOUNCE_MS);
 }
 
 export function saveFavorites() {
-  localStorage.setItem('kcal_tracker_favorites', JSON.stringify(state.favorites));
+  clearTimeout(saveDebounceTimer);
+  saveDebounceTimer = setTimeout(() => {
+    localStorage.setItem('kcal_tracker_favorites', JSON.stringify(state.favorites));
+  }, SAVE_DEBOUNCE_MS);
 }
 
 export function saveTdeeGoal() {
