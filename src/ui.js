@@ -37,6 +37,8 @@ export function escapeHtml(str) {
 }
 
 // DATE FORMATTING
+const dateFormatCache = new Map();
+
 export function formatDateFriendly(dateStr) {
   // Check cache first
   if (dateFormatCache.has(dateStr)) {

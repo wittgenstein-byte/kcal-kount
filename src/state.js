@@ -6,9 +6,6 @@ export function getLocalDateString(date = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
-// Memoization cache for formatDateFriendly
-const dateFormatCache = new Map();
-
 export let state = {
   entries: [],
   favorites: [],
