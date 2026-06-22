@@ -1,14 +1,4 @@
 ```
 # Dependencies
 node_modules/
-
-# Build outputs
-dist/
-
-# Vite specific
-.vite/
-
-# Logs
-*.log
-
 ```
