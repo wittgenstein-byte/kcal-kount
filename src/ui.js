@@ -385,6 +385,14 @@ export function prefillMealModalFromScan(result) {
   document.getElementById('meal-carb-input').value = result.carb;
   document.getElementById('meal-ai-scanned').value = '1';
 
+  // Store original AI guess for telemetry logging
+  state.lastAiGuess = {
+    calories: result.kcal,
+    protein: result.protein,
+    fat: result.fat,
+    carbs: result.carb
+  };
+
   // Show macro preview
   const macroPreview = document.getElementById('meal-macro-preview');
   if (macroPreview) macroPreview.classList.remove('hidden');

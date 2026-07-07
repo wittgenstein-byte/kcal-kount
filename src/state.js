@@ -23,7 +23,8 @@ export let state = {
   theme: 'dark',
   activeView: 'dashboard',
   analyticsRange: 7,
-  modelName: 'gemini-3.5-flash'
+  modelName: 'gemini-3.5-flash',
+  lastAiGuess: null
 };
 
 // Debounce timer for localStorage saves

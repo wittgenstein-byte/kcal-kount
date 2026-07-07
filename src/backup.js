@@ -8,13 +8,22 @@ import { saveEntries, saveFavorites, saveTdeeGoal, saveTdeeSettings } from './st
  * @param {function} showToast - Toast notification function.
  */
 export function exportBackup(state, getLocalDateString, showToast) {
+  let telemetryLog = [];
+  try {
+    const rawLog = localStorage.getItem('scan_telemetry_log');
+    if (rawLog) telemetryLog = JSON.parse(rawLog);
+  } catch (err) {
+    console.error('Error reading telemetry log for backup export:', err);
+  }
+
   const backupData = {
     version: '1.0.0',
     exportedAt: new Date().toISOString(),
     entries: state.entries,
     favorites: state.favorites,
     tdeeGoal: state.tdeeGoal,
-    tdeeSettings: state.tdeeSettings
+    tdeeSettings: state.tdeeSettings,
+    telemetryLog: telemetryLog
   };
   
   const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
@@ -57,6 +66,14 @@ export function importBackup(file, state, renderAll, closeModal, showToast) {
       if (data.favorites) state.favorites = data.favorites;
       if (typeof data.tdeeGoal === 'number') state.tdeeGoal = data.tdeeGoal;
       if (data.tdeeSettings) state.tdeeSettings = data.tdeeSettings;
+      
+      if (data.telemetryLog && Array.isArray(data.telemetryLog)) {
+        localStorage.setItem('scan_telemetry_log', JSON.stringify(data.telemetryLog));
+      } else {
+        // If importing a backup that doesn't have telemetry, clear it or leave it as-is?
+        // Let's clear it to keep data sync with backup file.
+        localStorage.removeItem('scan_telemetry_log');
+      }
       
       // Save state
       saveEntries();
