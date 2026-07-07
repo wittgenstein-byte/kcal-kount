@@ -8,9 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/assets/index-DzHw6Vav.js"></script>
+  <script type="module" crossorigin src="/assets/index-N1RffPJU.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/apexcharts-DRuIHvGc.js">
-  <link rel="stylesheet" crossorigin href="/assets/index-Pngxg2Vv.css">
+  <link rel="stylesheet" crossorigin href="/assets/index-CLe4HDkl.css">
 </head>
 <body>
   <!-- Toast Notification System -->
@@ -112,6 +112,53 @@
                   <span id="goal-display" class="goal-val">2000</span>
                   <span class="unit-label">kcal</span>
                 </div>
+              </div>
+
+            <!-- Daily Macro Progress Rings -->
+            <div class="macro-progress-container">
+              <!-- Carbohydrate Ring -->
+              <div class="macro-progress-item">
+                <div class="macro-circular-progress">
+                  <svg class="macro-progress-ring-svg" width="80" height="80">
+                    <circle class="progress-ring-bg" stroke="var(--border-muted)" stroke-width="6" fill="transparent" r="32" cx="40" cy="40"/>
+                    <circle id="carb-progress-ring-fill" class="macro-progress-ring-fill" stroke="var(--macro-carb)" stroke-width="6" fill="transparent" r="32" cx="40" cy="40" stroke-linecap="round"/>
+                  </svg>
+                  <div class="macro-progress-text">
+                    <span class="macro-value-percent" id="carb-pct">0%</span>
+                  </div>
+                </div>
+                <span class="macro-name">Carbs</span>
+                <span class="macro-stats" id="carb-stats">0/117g</span>
+              </div>
+
+              <!-- Protein Ring -->
+              <div class="macro-progress-item">
+                <div class="macro-circular-progress">
+                  <svg class="macro-progress-ring-svg" width="80" height="80">
+                    <circle class="progress-ring-bg" stroke="var(--border-muted)" stroke-width="6" fill="transparent" r="32" cx="40" cy="40"/>
+                    <circle id="protein-progress-ring-fill" class="macro-progress-ring-fill" stroke="var(--macro-protein)" stroke-width="6" fill="transparent" r="32" cx="40" cy="40" stroke-linecap="round"/>
+                  </svg>
+                  <div class="macro-progress-text">
+                    <span class="macro-value-percent" id="protein-pct">0%</span>
+                  </div>
+                </div>
+                <span class="macro-name">Protein</span>
+                <span class="macro-stats" id="protein-stats">0/156g</span>
+              </div>
+
+              <!-- Fat Ring -->
+              <div class="macro-progress-item">
+                <div class="macro-circular-progress">
+                  <svg class="macro-progress-ring-svg" width="80" height="80">
+                    <circle class="progress-ring-bg" stroke="var(--border-muted)" stroke-width="6" fill="transparent" r="32" cx="40" cy="40"/>
+                    <circle id="fat-progress-ring-fill" class="macro-progress-ring-fill" stroke="var(--macro-fat)" stroke-width="6" fill="transparent" r="32" cx="40" cy="40" stroke-linecap="round"/>
+                  </svg>
+                  <div class="macro-progress-text">
+                    <span class="macro-value-percent" id="fat-pct">0%</span>
+                  </div>
+                </div>
+                <span class="macro-name">Fat</span>
+                <span class="macro-stats" id="fat-stats">0/52g</span>
               </div>
             </div>
 

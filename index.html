@@ -111,6 +111,53 @@
                   <span class="unit-label">kcal</span>
                 </div>
               </div>
+
+            <!-- Daily Macro Progress Rings -->
+            <div class="macro-progress-container">
+              <!-- Carbohydrate Ring -->
+              <div class="macro-progress-item">
+                <div class="macro-circular-progress">
+                  <svg class="macro-progress-ring-svg" width="80" height="80">
+                    <circle class="progress-ring-bg" stroke="var(--border-muted)" stroke-width="6" fill="transparent" r="32" cx="40" cy="40"/>
+                    <circle id="carb-progress-ring-fill" class="macro-progress-ring-fill" stroke="var(--macro-carb)" stroke-width="6" fill="transparent" r="32" cx="40" cy="40" stroke-linecap="round"/>
+                  </svg>
+                  <div class="macro-progress-text">
+                    <span class="macro-value-percent" id="carb-pct">0%</span>
+                  </div>
+                </div>
+                <span class="macro-name">Carbs</span>
+                <span class="macro-stats" id="carb-stats">0/117g</span>
+              </div>
+
+              <!-- Protein Ring -->
+              <div class="macro-progress-item">
+                <div class="macro-circular-progress">
+                  <svg class="macro-progress-ring-svg" width="80" height="80">
+                    <circle class="progress-ring-bg" stroke="var(--border-muted)" stroke-width="6" fill="transparent" r="32" cx="40" cy="40"/>
+                    <circle id="protein-progress-ring-fill" class="macro-progress-ring-fill" stroke="var(--macro-protein)" stroke-width="6" fill="transparent" r="32" cx="40" cy="40" stroke-linecap="round"/>
+                  </svg>
+                  <div class="macro-progress-text">
+                    <span class="macro-value-percent" id="protein-pct">0%</span>
+                  </div>
+                </div>
+                <span class="macro-name">Protein</span>
+                <span class="macro-stats" id="protein-stats">0/156g</span>
+              </div>
+
+              <!-- Fat Ring -->
+              <div class="macro-progress-item">
+                <div class="macro-circular-progress">
+                  <svg class="macro-progress-ring-svg" width="80" height="80">
+                    <circle class="progress-ring-bg" stroke="var(--border-muted)" stroke-width="6" fill="transparent" r="32" cx="40" cy="40"/>
+                    <circle id="fat-progress-ring-fill" class="macro-progress-ring-fill" stroke="var(--macro-fat)" stroke-width="6" fill="transparent" r="32" cx="40" cy="40" stroke-linecap="round"/>
+                  </svg>
+                  <div class="macro-progress-text">
+                    <span class="macro-value-percent" id="fat-pct">0%</span>
+                  </div>
+                </div>
+                <span class="macro-name">Fat</span>
+                <span class="macro-stats" id="fat-stats">0/52g</span>
+              </div>
             </div>
 
             <div class="metrics-grid">

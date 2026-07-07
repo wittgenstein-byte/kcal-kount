@@ -320,6 +320,84 @@ export function updateSummaryMetrics() {
       progressRing.style.stroke = 'var(--accent-primary)';
     }
   }
+
+  // Calculate consumed macros for the day
+  const totalCarb = dailyEntries.reduce((sum, item) => sum + (parseFloat(item.carb) || 0), 0);
+  const totalProtein = dailyEntries.reduce((sum, item) => sum + (parseFloat(item.protein) || 0), 0);
+  const totalFat = dailyEntries.reduce((sum, item) => sum + (parseFloat(item.fat) || 0), 0);
+
+  // Calculate targets dynamically based on 30% Carb / 40% Protein / 30% Fat split of total daily calorie goal
+  const carbTarget = Math.round((state.tdeeGoal * 0.30) / 4);
+  const proteinTarget = Math.round((state.tdeeGoal * 0.40) / 4);
+  const fatTarget = Math.round((state.tdeeGoal * 0.30) / 9);
+
+  const macroCircumference = 201.06; // 2 * Math.PI * 32
+
+  // Update Carb Ring
+  const carbRing = document.getElementById('carb-progress-ring-fill');
+  if (carbRing) {
+    const carbPercentFactor = carbTarget > 0 ? Math.min(totalCarb / carbTarget, 1.0) : 0;
+    const carbOffset = macroCircumference - (carbPercentFactor * macroCircumference);
+    carbRing.style.strokeDashoffset = carbOffset;
+    if (totalCarb > carbTarget) {
+      carbRing.style.stroke = 'var(--color-warning)';
+    } else {
+      carbRing.style.stroke = 'var(--macro-carb)';
+    }
+  }
+  const carbPctEl = document.getElementById('carb-pct');
+  if (carbPctEl) {
+    const pct = carbTarget > 0 ? Math.round((totalCarb / carbTarget) * 100) : 0;
+    carbPctEl.textContent = `${pct}%`;
+  }
+  const carbStatsEl = document.getElementById('carb-stats');
+  if (carbStatsEl) {
+    carbStatsEl.textContent = `${Math.round(totalCarb)}/${carbTarget}g`;
+  }
+
+  // Update Protein Ring
+  const proteinRing = document.getElementById('protein-progress-ring-fill');
+  if (proteinRing) {
+    const proteinPercentFactor = proteinTarget > 0 ? Math.min(totalProtein / proteinTarget, 1.0) : 0;
+    const proteinOffset = macroCircumference - (proteinPercentFactor * macroCircumference);
+    proteinRing.style.strokeDashoffset = proteinOffset;
+    if (totalProtein > proteinTarget) {
+      proteinRing.style.stroke = 'var(--color-warning)';
+    } else {
+      proteinRing.style.stroke = 'var(--macro-protein)';
+    }
+  }
+  const proteinPctEl = document.getElementById('protein-pct');
+  if (proteinPctEl) {
+    const pct = proteinTarget > 0 ? Math.round((totalProtein / proteinTarget) * 100) : 0;
+    proteinPctEl.textContent = `${pct}%`;
+  }
+  const proteinStatsEl = document.getElementById('protein-stats');
+  if (proteinStatsEl) {
+    proteinStatsEl.textContent = `${Math.round(totalProtein)}/${proteinTarget}g`;
+  }
+
+  // Update Fat Ring
+  const fatRing = document.getElementById('fat-progress-ring-fill');
+  if (fatRing) {
+    const fatPercentFactor = fatTarget > 0 ? Math.min(totalFat / fatTarget, 1.0) : 0;
+    const fatOffset = macroCircumference - (fatPercentFactor * macroCircumference);
+    fatRing.style.strokeDashoffset = fatOffset;
+    if (totalFat > fatTarget) {
+      fatRing.style.stroke = 'var(--color-warning)';
+    } else {
+      fatRing.style.stroke = 'var(--macro-fat)';
+    }
+  }
+  const fatPctEl = document.getElementById('fat-pct');
+  if (fatPctEl) {
+    const pct = fatTarget > 0 ? Math.round((totalFat / fatTarget) * 100) : 0;
+    fatPctEl.textContent = `${pct}%`;
+  }
+  const fatStatsEl = document.getElementById('fat-stats');
+  if (fatStatsEl) {
+    fatStatsEl.textContent = `${Math.round(totalFat)}/${fatTarget}g`;
+  }
 }
 
 export function renderAnalyticsView() {

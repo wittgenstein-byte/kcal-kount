@@ -30,6 +30,9 @@
   --input-border: rgba(255, 255, 255, 0.12);
   --input-focus: #8b5cf6;
   --bg-pattern: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  --macro-carb: #34d399;
+  --macro-protein: #60a5fa;
+  --macro-fat: #fbbf24;
 }
 
 :root[data-theme="light"] {
@@ -61,6 +64,9 @@
   --input-border: rgba(0, 0, 0, 0.1);
   --input-focus: #6d28d9;
   --bg-pattern: radial-gradient(rgba(109, 40, 217, 0.04) 1px, transparent 1px);
+  --macro-carb: #059669;
+  --macro-protein: #2563eb;
+  --macro-fat: #d97706;
 }
 
 body {
@@ -236,6 +242,64 @@ body {
 .of-label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; margin: 0.15rem 0; font-weight: 500; }
 .goal-val { font-size: 1.15rem; font-weight: 600; color: var(--text-secondary); }
 .unit-label { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.1rem; }
+
+.macro-progress-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 1.25rem 0;
+  padding: 1rem 0;
+  border-top: 1px dashed var(--border-muted);
+  border-bottom: 1px dashed var(--border-muted);
+  gap: 0.5rem;
+}
+.macro-progress-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 1;
+}
+.macro-circular-progress {
+  position: relative;
+  width: 80px;
+  height: 80px;
+}
+.macro-progress-ring-svg {
+  transform: rotate(-90deg);
+}
+.macro-progress-ring-fill {
+  stroke-dasharray: 201.06;
+  stroke-dashoffset: 201.06;
+  transition: stroke-dashoffset 0.4s ease-out, stroke 0.3s ease;
+}
+.macro-progress-text {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.macro-value-percent {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.macro-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.macro-stats {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
 
 .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; border-top: 1px solid var(--border-muted); padding-top: 1.25rem; }
 .metric-item { display: flex; flex-direction: column; gap: 0.25rem; }
