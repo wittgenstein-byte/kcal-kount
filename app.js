@@ -52,14 +52,34 @@ function initTheme() {
   document.documentElement.setAttribute('data-theme', state.theme);
 }
 
+function renderActiveView() {
+  const viewDashboardBtn = document.getElementById('view-dashboard-btn');
+  const viewAnalyticsBtn = document.getElementById('view-analytics-btn');
+  const dashboardView = document.getElementById('dashboard-view');
+  const analyticsView = document.getElementById('analytics-view');
+
+  if (viewDashboardBtn && viewAnalyticsBtn && dashboardView && analyticsView) {
+    if (state.activeView === 'dashboard') {
+      viewDashboardBtn.classList.add('active');
+      viewAnalyticsBtn.classList.remove('active');
+      dashboardView.classList.remove('hidden');
+      analyticsView.classList.add('hidden');
+    } else {
+      viewAnalyticsBtn.classList.add('active');
+      viewDashboardBtn.classList.remove('active');
+      analyticsView.classList.remove('hidden');
+      dashboardView.classList.add('hidden');
+      renderAnalyticsView();
+    }
+  }
+}
+
 function renderAll() {
+  renderActiveView();
   renderTdeeInputs();
   renderDailyLog();
   renderFavorites();
   updateSummaryMetrics();
-  if (state.activeView === 'analytics') {
-    renderAnalyticsView();
-  }
 }
 
 function updateDateDisplay() {
@@ -181,9 +201,32 @@ function setupEventListeners() {
   const closeSettingsBtn = document.getElementById('close-settings-btn');
   const settingsModal = document.getElementById('settings-modal');
 
+  // Settings Modal Tabs Switching
+  const settingsTabGoals = document.getElementById('settings-tab-goals');
+  const settingsTabSystem = document.getElementById('settings-tab-system');
+  const settingsContentGoals = document.getElementById('settings-content-goals');
+  const settingsContentSystem = document.getElementById('settings-content-system');
+
+  if (settingsTabGoals && settingsTabSystem && settingsContentGoals && settingsContentSystem) {
+    settingsTabGoals.addEventListener('click', () => {
+      settingsTabGoals.classList.add('active');
+      settingsTabSystem.classList.remove('active');
+      settingsContentGoals.classList.remove('hidden');
+      settingsContentSystem.classList.add('hidden');
+    });
+
+    settingsTabSystem.addEventListener('click', () => {
+      settingsTabSystem.classList.add('active');
+      settingsTabGoals.classList.remove('active');
+      settingsContentSystem.classList.remove('hidden');
+      settingsContentGoals.classList.add('hidden');
+    });
+  }
+
   if (settingsBtn) {
     settingsBtn.addEventListener('click', () => {
       openModal(settingsModal);
+      if (settingsTabGoals) settingsTabGoals.click();
       renderTdeeInputs();
       loadAiSettingsIntoForm();
       updateTelemetryCountLabel();
@@ -312,21 +355,16 @@ function setupEventListeners() {
   if (viewDashboardBtn && viewAnalyticsBtn && dashboardView && analyticsView) {
     viewDashboardBtn.addEventListener('click', () => {
       state.activeView = 'dashboard';
-      viewDashboardBtn.classList.add('active');
-      viewAnalyticsBtn.classList.remove('active');
-      dashboardView.classList.remove('hidden');
-      analyticsView.classList.add('hidden');
+      renderActiveView();
     });
 
     viewAnalyticsBtn.addEventListener('click', () => {
       state.activeView = 'analytics';
-      viewAnalyticsBtn.classList.add('active');
-      viewDashboardBtn.classList.remove('active');
-      analyticsView.classList.remove('hidden');
-      dashboardView.classList.add('hidden');
-      renderAnalyticsView();
+      renderActiveView();
     });
   }
+
+
 
   // Analytics Range Toggle Buttons
   const range7dBtn = document.getElementById('range-7d-btn');
@@ -486,8 +524,26 @@ function openMealModalForCreate() {
   const mealModal = document.getElementById('meal-modal');
   document.getElementById('meal-modal-title').textContent = 'Log Meal Entry';
   document.getElementById('meal-id-input').value = '';
-  document.getElementById('meal-name-input').value = '';
-  document.getElementById('meal-calories-input').value = '';
+
+  // Pre-fill name and calories from consolidated entry bar if present
+  const quickLogInputEl = document.getElementById('quick-log-input');
+  let prefillName = '';
+  let prefillCalories = '';
+  if (quickLogInputEl) {
+    const rawVal = quickLogInputEl.value.trim();
+    if (rawVal) {
+      const match = rawVal.match(/^(.*?)\s+(\d+)$/);
+      if (match) {
+        prefillName = match[1].trim();
+        prefillCalories = match[2];
+      } else {
+        prefillName = rawVal;
+      }
+    }
+  }
+
+  document.getElementById('meal-name-input').value = prefillName;
+  document.getElementById('meal-calories-input').value = prefillCalories;
   document.getElementById('meal-date-input').value = state.currentDate;
   document.getElementById('save-meal-btn').textContent = 'Log Entry';
 

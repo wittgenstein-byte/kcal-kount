@@ -307,6 +307,17 @@ export function updateSummaryMetrics() {
     percentageDisplay.textContent = `${percentage}%`;
   }
 
+  // Toggle Daily Progress empty state vs metrics grid
+  const progressEmptyState = document.getElementById('progress-empty-state');
+  const metricsGrid = document.querySelector('.metrics-grid');
+  if (totalConsumed === 0) {
+    if (progressEmptyState) progressEmptyState.classList.remove('hidden');
+    if (metricsGrid) metricsGrid.classList.add('hidden');
+  } else {
+    if (progressEmptyState) progressEmptyState.classList.add('hidden');
+    if (metricsGrid) metricsGrid.classList.remove('hidden');
+  }
+
   const progressRing = document.getElementById('progress-ring-fill');
   if (progressRing) {
     const circumference = 565.48; // radius=90
@@ -401,6 +412,19 @@ export function updateSummaryMetrics() {
 }
 
 export function renderAnalyticsView() {
+  // Synchronize range toggle buttons based on state
+  const range7dBtn = document.getElementById('range-7d-btn');
+  const range30dBtn = document.getElementById('range-30d-btn');
+  if (range7dBtn && range30dBtn) {
+    if (state.analyticsRange === 7) {
+      range7dBtn.classList.add('active');
+      range30dBtn.classList.remove('active');
+    } else {
+      range30dBtn.classList.add('active');
+      range7dBtn.classList.remove('active');
+    }
+  }
+
   const dates = [];
   const labels = [];
   const rawDates = [];
