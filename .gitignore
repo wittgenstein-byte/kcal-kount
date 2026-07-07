@@ -1,0 +1,9 @@
+dist/assets
+node_modules/
+.env
+
+CLAUDE.md
+api/
+
+.rtk
+design/
