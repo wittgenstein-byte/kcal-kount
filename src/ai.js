@@ -31,6 +31,7 @@ export async function analyzeFood(base64DataUrl) {
 
   const payload = {
     model,
+    response_format: { type: 'json_object' },
     messages: [
       {
         role: 'system',
@@ -81,17 +82,7 @@ Example response:
   console.log('[AI Scan] Raw content:', rawContent);
 
   // Try multiple strategies to extract JSON from the response
-  let parsed = tryParseJSON(rawContent);
-
-  // Strategy 4: If all JSON parsing failed, send a repair call asking the LLM to reformat
-  if (!parsed && rawContent.trim().length > 0) {
-    console.log('[AI Scan] JSON parse failed, attempting repair call...');
-    try {
-      parsed = await repairWithLLM(rawContent, model);
-    } catch (e) {
-      console.error('[AI Scan] Repair call also failed:', e);
-    }
-  }
+  const parsed = tryParseJSON(rawContent);
 
   if (!parsed) {
     console.error('[AI Scan] All parsing strategies failed. Raw:', rawContent);
@@ -127,7 +118,6 @@ function sanitizeJSONString(str) {
   s = s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
 
   // Replace single-quoted values with double-quoted (simple heuristic)
-  // Match key-value patterns: 'value' → "value"
   s = s.replace(/:\s*'([^']*)'/g, ': "$1"');
   // Match single-quoted keys: 'key': → "key":
   s = s.replace(/'([^']+)'\s*:/g, '"$1":');
@@ -152,36 +142,6 @@ function tryParseSingle(str) {
   try { return JSON.parse(sanitizeJSONString(trimmed)); } catch (e) { /* continue */ }
 
   return null;
-}
-
-function tryRepairTruncated(str) {
-  let s = sanitizeJSONString(str.trim());
-
-  // Count unmatched braces/brackets
-  let braces = 0, brackets = 0;
-  let inString = false, escape = false;
-  for (const ch of s) {
-    if (escape) { escape = false; continue; }
-    if (ch === '\\' && inString) { escape = true; continue; }
-    if (ch === '"') { inString = !inString; continue; }
-    if (inString) continue;
-    if (ch === '{') braces++;
-    if (ch === '}') braces--;
-    if (ch === '[') brackets++;
-    if (ch === ']') brackets--;
-  }
-
-  // If we're still inside a string, close it
-  if (inString) s += '"';
-
-  // Remove any trailing comma before we close
-  s = s.replace(/,\s*$/, '');
-
-  // Close open brackets/braces
-  while (brackets > 0) { s += ']'; brackets--; }
-  while (braces > 0) { s += '}'; braces--; }
-
-  try { return JSON.parse(s); } catch (e) { return null; }
 }
 
 function normalizeFields(obj) {
@@ -246,28 +206,7 @@ function tryParseJSON(rawContent) {
   const content = rawContent.trim();
   if (!content) return null;
 
-  // Strategy 1: Markdown code fences (```json ... ``` or ``` ... ```)
-  const fenceRegex = /```(?:json|JSON|js|javascript)?\s*\n?([\s\S]*?)\n?\s*```/g;
-  let fenceMatch;
-  while ((fenceMatch = fenceRegex.exec(content)) !== null) {
-    const parsed = tryParseSingle(fenceMatch[1]);
-    if (parsed) {
-      console.log('[AI Scan] Parsed via markdown fence strategy');
-      return normalizeFields(parsed);
-    }
-  }
-
-  // Strategy 2: Find JSON object(s) via balanced brace extraction
-  const braceBlocks = extractBraceBlocks(content);
-  for (const block of braceBlocks) {
-    const parsed = tryParseSingle(block);
-    if (parsed) {
-      console.log('[AI Scan] Parsed via brace extraction strategy');
-      return normalizeFields(parsed);
-    }
-  }
-
-  // Strategy 3: Entire content as JSON
+  // Strategy 1: Direct JSON parse (entire content as JSON, with sanitization)
   {
     const parsed = tryParseSingle(content);
     if (parsed) {
@@ -276,20 +215,12 @@ function tryParseJSON(rawContent) {
     }
   }
 
-  // Strategy 4: Try to repair truncated JSON from brace blocks
+  // Strategy 2: Balanced brace block extraction (handles surrounding prose/markdown)
+  const braceBlocks = extractBraceBlocks(content);
   for (const block of braceBlocks) {
-    const parsed = tryRepairTruncated(block);
+    const parsed = tryParseSingle(block);
     if (parsed) {
-      console.log('[AI Scan] Parsed via truncated JSON repair');
-      return normalizeFields(parsed);
-    }
-  }
-
-  // Strategy 5: Regex extraction as last resort — pull key-value pairs directly
-  {
-    const parsed = regexExtractFields(content);
-    if (parsed) {
-      console.log('[AI Scan] Parsed via regex field extraction');
+      console.log('[AI Scan] Parsed via brace extraction strategy');
       return normalizeFields(parsed);
     }
   }
@@ -327,185 +258,4 @@ function extractBraceBlocks(str) {
   }
 
   return blocks;
-}
-
-function regexExtractFields(text) {
-  const menuMatch = text.match(/["']?(?:menu|name|food|dish)["']?\s*[:=]\s*["']([^"'\n]+)["']/i);
-  const kcalMatch = text.match(/["']?(?:kcal|calories?|cal|energy)["']?\s*[:=]\s*["']?(\d+(?:\.\d+)?)["']?/i);
-  const proteinMatch = text.match(/["']?(?:protein(?:_?g(?:rams)?)?|prot)["']?\s*[:=]\s*["']?(\d+(?:\.\d+)?)["']?/i);
-  const fatMatch = text.match(/["']?(?:fat(?:_?g(?:rams)?)?|fats?)["']?\s*[:=]\s*["']?(\d+(?:\.\d+)?)["']?/i);
-  const carbMatch = text.match(/["']?(?:carb(?:ohydrate)?s?(?:_?g(?:rams)?)?|carb_g)["']?\s*[:=]\s*["']?(\d+(?:\.\d+)?)["']?/i);
-
-  // Need at least kcal or menu to consider it a valid extraction
-  if (!kcalMatch && !menuMatch) return null;
-
-  return {
-    menu: menuMatch ? menuMatch[1].trim() : 'Unknown food',
-    kcal: kcalMatch ? parseFloat(kcalMatch[1]) : 0,
-    protein_g: proteinMatch ? parseFloat(proteinMatch[1]) : 0,
-    fat_g: fatMatch ? parseFloat(fatMatch[1]) : 0,
-    carb_g: carbMatch ? parseFloat(carbMatch[1]) : 0
-  };
-}
-
-function normalizeNutrition(obj) {
-  if (!obj || typeof obj !== 'object') return null;
-  const num = (v) => {
-    if (typeof v === 'number') return v;
-    if (typeof v === 'string') {
-      const m = v.replace(',', '.').match(/\d+(\.\d+)?/); // extract first number
-      return m ? parseFloat(m[0]) : 0;
-    }
-    return 0;
-  };
-  return {
-    menu: (obj.menu || obj.name || obj.food || obj.dish || obj.food_name || 'Unknown food').toString().trim(),
-    kcal: num(obj.kcal ?? obj.calories ?? obj.energy ?? obj.cal ?? 0),
-    protein_g: num(obj.protein_g ?? obj.protein ?? obj.proteins ?? 0),
-    fat_g: num(obj.fat_g ?? obj.fat ?? obj.fats ?? 0),
-    carb_g: num(obj.carb_g ?? obj.carb ?? obj.carbohydrate ?? obj.carbs ?? obj.carbohydrates ?? 0),
-  };
-}
-
-function stripLineComments(str) {
-  let result = '';
-  let inString = false;
-  let escape = false;
-
-  for (let i = 0; i < str.length; i++) {
-    const ch = str[i];
-
-    if (escape) {
-      result += ch;
-      escape = false;
-      continue;
-    }
-
-    if (ch === '\\' && inString) {
-      result += ch;
-      escape = true;
-      continue;
-    }
-
-    if (ch === '"') {
-      inString = !inString;
-      result += ch;
-      continue;
-    }
-
-    // If outside a string and we see //, skip to end of line
-    if (!inString && ch === '/' && str[i + 1] === '/') {
-      while (i < str.length && str[i] !== '\n' && str[i] !== '\r') i++;
-      continue;
-    }
-
-    result += ch;
-  }
-
-  return result;
-}
-
-function extractAndParseJSON(text) {
-  if (!text || typeof text !== 'string') return null;
-
-  let s = text.trim();
-
-  // 1) Strip markdown code fences: ```json ... ``` or ``` ... ```
-  s = s.replace(/```(?:json)?\s*/gi, '').replace(/```/g, '').trim();
-
-  // 2) Isolate the first { ... last } block (discard leading/trailing prose)
-  const first = s.indexOf('{');
-  const last = s.lastIndexOf('}');
-  if (first === -1 || last === -1 || last < first) return null;
-  let json = s.slice(first, last + 1);
-
-  // 3) Clean common LLM quirks
-  json = json
-    .replace(/[\u201C\u201D]/g, '"')       // smart double quotes → "
-    .replace(/[\u2018\u2019]/g, "'")       // smart single quotes → '
-    .replace(/,\s*([}\]])/g, '$1');        // trailing commas
-
-  // Strip // comments only when outside of quoted strings
-  json = stripLineComments(json);
-
-  // 4) Try direct parse → normalizeNutrition forces numbers
-  try {
-    return normalizeNutrition(JSON.parse(json));
-  } catch (_) { /* continue */ }
-
-  // 5) Fallback: convert single-quoted keys/values → double quotes
-  try {
-    const fixed = json
-      .replace(/'([^']*)'\s*:/g, '"$1":')       // 'key': → "key":
-      .replace(/:\s*'([^']*)'/g, ': "$1"')       // : 'value' → : "value"
-      .replace(/,\s*'([^']*)'/g, ', "$1"')       // , 'value' → , "value"
-      .replace(/\[\s*'([^']*)'/g, '["$1"')        // ['value' → ["value"
-      .replace(/'\s*]/g, '"]')                    // '] → "]
-      .replace(/,\s*([}\]])/g, '$1');              // trailing commas
-    return normalizeNutrition(JSON.parse(fixed));
-  } catch (_) { /* continue */ }
-
-  return null;
-}
-
-async function repairWithLLM(rawText, model) {
-  const messages = [
-    {
-      role: 'system',
-      content:
-        'You are a JSON converter. Output ONLY a single valid JSON object. ' +
-        'No markdown, no code fences, no explanation. ' +
-        'All nutrition values must be plain numbers (no units).',
-    },
-    {
-      role: 'user',
-      content:
-        'Convert this food analysis to JSON with EXACTLY these keys: ' +
-        '{"menu": string, "protein_g": number, "fat_g": number, "carb_g": number, "kcal": number}\n\n' +
-        'Analysis:\n' + rawText,
-    },
-  ];
-
-  const headers = {
-    'Content-Type': 'application/json'
-  };
-
-  // Try with response_format first; fall back without it if backend rejects (400)
-  let resp = await fetchWithTimeout(PROXY_URL, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({
-      model,
-      response_format: { type: 'json_object' },
-      messages,
-      max_tokens: 2048,
-      temperature: 0,
-    }),
-    timeout: 15000
-  });
-
-  if (resp.status === 400) {
-    console.warn('[AI Scan] Backend rejected response_format, retrying without it');
-    resp = await fetchWithTimeout(PROXY_URL, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        model,
-        messages,
-        max_tokens: 2048,
-        temperature: 0,
-      }),
-      timeout: 15000
-    });
-  }
-
-  if (!resp.ok) throw new Error('Repair call failed');
-
-  const repairData = await resp.json();
-  const repairContent = repairData?.choices?.[0]?.message?.content || '';
-  console.log('[AI Scan] Repair response:', repairContent);
-
-  // Use the aggressive extractor, then force all values to numbers
-  const parsed = extractAndParseJSON(repairContent);
-  return normalizeNutrition(parsed);
 }

@@ -241,6 +241,50 @@ function setupEventListeners() {
     });
   }
 
+  // Quick Log input listener
+  const quickLogInput = document.getElementById('quick-log-input');
+  if (quickLogInput) {
+    quickLogInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const val = quickLogInput.value.trim();
+        if (!val) return;
+        const match = val.match(/^(.*?)\s+(\d+)$/);
+        if (!match) {
+          showToast("Format: 'Food Name Calories' (e.g. Banana 105)", "warning");
+          return;
+        }
+        const name = match[1].trim();
+        const calories = parseInt(match[2], 10);
+        if (!name || isNaN(calories) || calories <= 0) {
+          showToast("Please enter a valid food name and positive calorie count.", "warning");
+          return;
+        }
+
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+        const newEntry = {
+          id: 'meal-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+          name,
+          calories,
+          mealType: '',
+          date: state.currentDate,
+          time: timeString,
+          aiScanned: false,
+          protein: null,
+          fat: null,
+          carb: null
+        };
+
+        state.entries.push(newEntry);
+        saveEntries();
+        renderAll();
+        showToast(`Logged "${name}" (${calories} kcal)`, 'success');
+        quickLogInput.value = '';
+      }
+    });
+  }
+
   // Close limit warning banner
   const closeWarningBtn = document.getElementById('close-warning-btn');
   if (closeWarningBtn) {
