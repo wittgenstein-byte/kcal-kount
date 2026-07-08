@@ -928,3 +928,88 @@ input:focus, select:focus { border-color: var(--input-focus); }
     height: 18px !important;
   }
 }
+
+@media (max-width: 640px) {
+  .header-container {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.85rem;
+    padding: 0.75rem 1rem;
+  }
+
+  .app-logo {
+    min-width: 0;
+  }
+
+  .app-logo h1 {
+    font-size: 1.35rem;
+  }
+
+  .date-navigator {
+    grid-column: 1 / -1;
+    width: 100%;
+    justify-content: space-between;
+    gap: 0.35rem;
+  }
+
+  .date-picker-wrapper {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .date-label {
+    width: 100%;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .date-navigator .text-btn {
+    padding-inline: 0.85rem;
+  }
+
+  .app-main {
+    padding: 1rem;
+    gap: 1rem;
+  }
+
+  .dashboard-grid,
+  .panel-left,
+  .panel-right,
+  .dashboard-card,
+  .view-pane {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 380px) {
+  .header-container,
+  .app-main {
+    padding-inline: 0.75rem;
+  }
+
+  .dashboard-card {
+    padding: 1rem 0.85rem;
+  }
+
+  .progress-card {
+    padding-inline: 0.85rem !important;
+  }
+
+  .summary-split-container {
+    align-items: stretch;
+  }
+
+  .circular-progress {
+    width: 132px !important;
+    height: 132px !important;
+  }
+
+  .ring-value {
+    font-size: 1.6rem !important;
+  }
+
+  .macro-horizontal-grid {
+    grid-template-columns: 1fr;
+  }
+}
