@@ -9,6 +9,15 @@ import {
   getLocalDateString 
 } from './src/state.js';
 
+import { 
+  logScanTelemetry,
+  clearTelemetryLog,
+  copyTelemetryLogToClipboard,
+  getTelemetryLog,
+  updateTelemetryOnEdit,
+  removeTelemetryOnDelete
+} from './src/telemetry.js';
+
 import { calculateTdee } from './src/calculator.js';
 import { exportBackup, importBackup } from './src/backup.js';
 import { 
@@ -177,6 +186,7 @@ function setupEventListeners() {
       openModal(settingsModal);
       renderTdeeInputs();
       loadAiSettingsIntoForm();
+      updateTelemetryCountLabel();
     });
   }
   if (closeSettingsModal) closeSettingsModal.addEventListener('click', () => closeModal(settingsModal));
@@ -238,6 +248,50 @@ function setupEventListeners() {
   if (favSearchInput) {
     favSearchInput.addEventListener('input', () => {
       renderFavorites(favSearchInput.value);
+    });
+  }
+
+  // Quick Log input listener
+  const quickLogInput = document.getElementById('quick-log-input');
+  if (quickLogInput) {
+    quickLogInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const val = quickLogInput.value.trim();
+        if (!val) return;
+        const match = val.match(/^(.*?)\s+(\d+)$/);
+        if (!match) {
+          showToast("Format: 'Food Name Calories' (e.g. Banana 105)", "warning");
+          return;
+        }
+        const name = match[1].trim();
+        const calories = parseInt(match[2], 10);
+        if (!name || isNaN(calories) || calories <= 0) {
+          showToast("Please enter a valid food name and positive calorie count.", "warning");
+          return;
+        }
+
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+        const newEntry = {
+          id: 'meal-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+          name,
+          calories,
+          mealType: '',
+          date: state.currentDate,
+          time: timeString,
+          aiScanned: false,
+          protein: null,
+          fat: null,
+          carb: null
+        };
+
+        state.entries.push(newEntry);
+        saveEntries();
+        renderAll();
+        showToast(`Logged "${name}" (${calories} kcal)`, 'success');
+        quickLogInput.value = '';
+      }
     });
   }
 
@@ -307,8 +361,31 @@ function setupEventListeners() {
     importBtn.addEventListener('click', () => importFileInput.click());
     importFileInput.addEventListener('change', (e) => {
       if (e.target.files && e.target.files[0]) {
-        importBackup(e.target.files[0], state, renderAll, closeModal, showToast);
+        importBackup(e.target.files[0], state, () => {
+          renderAll();
+          updateTelemetryCountLabel();
+        }, closeModal, showToast);
         e.target.value = '';
+      }
+    });
+  }
+
+  // Telemetry Actions Event Listeners
+  const copyTelemetryBtn = document.getElementById('copy-telemetry-btn');
+  const clearTelemetryBtn = document.getElementById('clear-telemetry-btn');
+
+  if (copyTelemetryBtn) {
+    copyTelemetryBtn.addEventListener('click', () => {
+      copyTelemetryLogToClipboard(showToast);
+    });
+  }
+
+  if (clearTelemetryBtn) {
+    clearTelemetryBtn.addEventListener('click', () => {
+      if (confirm('Are you sure you want to clear all telemetry logs?')) {
+        clearTelemetryLog();
+        updateTelemetryCountLabel();
+        showToast('Telemetry logs cleared.', 'info');
       }
     });
   }
@@ -405,6 +482,7 @@ function calculateTdeeFromForm() {
 
 // MEAL LOG CRUD DISPATCHERS
 function openMealModalForCreate() {
+  state.lastAiGuess = null;
   const mealModal = document.getElementById('meal-modal');
   document.getElementById('meal-modal-title').textContent = 'Log Meal Entry';
   document.getElementById('meal-id-input').value = '';
@@ -425,6 +503,7 @@ function openMealModalForCreate() {
 }
 
 function openMealModalForEdit(entry) {
+  state.lastAiGuess = null;
   const mealModal = document.getElementById('meal-modal');
   document.getElementById('meal-modal-title').textContent = 'Edit Meal Entry';
   document.getElementById('meal-id-input').value = entry.id;
@@ -471,6 +550,7 @@ function handleMealFormSubmit() {
     // Update Mode
     const index = state.entries.findIndex(e => e.id === id);
     if (index !== -1) {
+      const wasAiScanned = state.entries[index].aiScanned;
       state.entries[index].name = name;
       state.entries[index].calories = calories;
       state.entries[index].date = date;
@@ -478,6 +558,17 @@ function handleMealFormSubmit() {
       state.entries[index].fat = fat;
       state.entries[index].carb = carb;
       state.entries[index].aiScanned = aiScanned;
+
+      // Update telemetry log if this meal was AI scanned
+      if (wasAiScanned || aiScanned) {
+        updateTelemetryOnEdit(id, {
+          calories: calories,
+          protein: protein,
+          fat: fat,
+          carbs: carb
+        });
+      }
+
       saveEntries();
       renderAll();
       showToast(`Updated entry: "${name}"`, 'success');
@@ -502,6 +593,19 @@ function handleMealFormSubmit() {
     };
 
     state.entries.push(newEntry);
+
+    // Log AI Scan Telemetry if applicable
+    if (aiScanned && state.lastAiGuess) {
+      logScanTelemetry(state.lastAiGuess, {
+        id: newEntry.id,
+        calories: calories,
+        protein: protein,
+        fat: fat,
+        carbs: carb
+      });
+      state.lastAiGuess = null;
+    }
+
     saveEntries();
     renderAll();
     showToast(`Logged "${name}" (${calories} kcal)`, 'success');
@@ -518,7 +622,14 @@ function deleteMealEntry(id) {
   const index = state.entries.findIndex(e => e.id === id);
   if (index !== -1) {
     const name = state.entries[index].name;
+    const wasAiScanned = state.entries[index].aiScanned;
     state.entries.splice(index, 1);
+
+    // Remove from telemetry log if applicable
+    if (wasAiScanned) {
+      removeTelemetryOnDelete(id);
+    }
+
     saveEntries();
     renderAll();
     showToast(`Deleted "${name}"`, 'success');
@@ -629,5 +740,13 @@ function handleFavoriteToggle(id) {
     saveFavorites();
     renderAll();
     showToast(`Added "${entry.name}" to Favorites!`, 'success');
+  }
+}
+
+function updateTelemetryCountLabel() {
+  const label = document.getElementById('telemetry-count-label');
+  if (label) {
+    const logs = getTelemetryLog();
+    label.textContent = `${logs.length} / 50 scans logged`;
   }
 }

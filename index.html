@@ -146,6 +146,11 @@
               </button>
             </div>
 
+            <!-- Quick Log Input -->
+            <div class="quick-log-container">
+              <input type="text" id="quick-log-input" placeholder="Quick log: e.g. 'Oatmeal 350' (press Enter)" autocomplete="off">
+            </div>
+
             <!-- Unified Meal Log Section -->
             <div class="meal-sections-container">
               <div class="meal-section">
@@ -430,7 +435,7 @@
 
         <!-- AI Settings -->
         <div class="settings-section-divider"></div>
-        <div class="settings-section-title">AI Model</div>
+        <div class="settings-section-title">AI Model & Telemetry</div>
         <div class="settings-ai-section">
           <div class="form-group">
             <label for="settings-model-name">AI Model Name</label>
@@ -439,6 +444,23 @@
           </div>
           <div style="margin-top:0.75rem;">
             <button type="button" id="save-ai-settings-btn" class="text-btn primary-btn">Save AI Settings</button>
+          </div>
+
+          <div class="settings-section-divider" style="margin: 1.25rem 0 1rem 0;"></div>
+          <div class="form-group">
+            <label>AI Scan Telemetry Logs</label>
+            <p id="telemetry-count-label" class="input-help" style="margin-bottom: 0.5rem; font-weight: 500;">0 / 50 scans logged</p>
+            <div class="telemetry-actions" style="display: flex; gap: 0.75rem;">
+              <button type="button" id="copy-telemetry-btn" class="text-btn secondary-btn" style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.85rem; padding: 0.4rem 0.75rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                Copy Logs
+              </button>
+              <button type="button" id="clear-telemetry-btn" class="text-btn secondary-btn" style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.85rem; padding: 0.4rem 0.75rem; border-color: rgba(244, 63, 94, 0.25); color: #f43f5e; background-color: rgba(244, 63, 94, 0.05);">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                Clear Logs
+              </button>
+            </div>
+            <p class="input-help" style="margin-top: 0.25rem;">Collect 50 entries to settle the debate on Visual pre-fills vs. Downgrading AI.</p>
           </div>
         </div>
       </div>
