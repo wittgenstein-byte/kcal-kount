@@ -125,7 +125,7 @@ export function closeModal(modalEl) {
 // DOM RENDERING
 export function renderTdeeInputs() {
   const manualGoalInput = getCachedElement('manual-goal-input');
-  const goalDisplay = getCachedElement('goal-display');
+  const goalDisplay = getCachedElement('target-calories');
   
   if (manualGoalInput) manualGoalInput.value = state.tdeeGoal;
   if (goalDisplay) goalDisplay.textContent = state.tdeeGoal.toLocaleString();
@@ -208,11 +208,14 @@ export function renderDailyLog() {
       li.innerHTML = `
         <div class="item-info">
           <span class="item-name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</span>
-          <span class="item-time">${escapeHtml(item.time || 'Logged')}</span>
+          <div class="item-meta">
+            <span class="item-time">${escapeHtml(item.time || 'Logged')}</span>
+            <span class="item-meta-divider">•</span>
+            <span class="item-kcal-val">${parseInt(item.calories, 10).toLocaleString()} kcal</span>
+          </div>
           ${macroPillsHtml}
         </div>
         <div class="item-kcal-actions">
-          <span class="item-kcal-val">${parseInt(item.calories, 10).toLocaleString()} kcal</span>
           <div class="actions-wrapper">
             <button class="icon-btn action-btn btn-fav ${isFav ? 'active' : ''}" data-id="${item.id}" title="${isFav ? 'In Favorites' : 'Add to Favorites'}">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
@@ -276,40 +279,52 @@ export function updateSummaryMetrics() {
   const dailyEntries = state.entries.filter(e => e.date === state.currentDate);
   const totalConsumed = dailyEntries.reduce((sum, item) => sum + parseInt(item.calories, 10), 0);
   
-  document.getElementById('consumed-display').textContent = totalConsumed.toLocaleString();
-  
+  const targetCaloriesEl = document.getElementById('target-calories');
+  const foodCaloriesEl = document.getElementById('food-calories');
+  const burnCaloriesEl = document.getElementById('burn-calories');
+  const caloriesRemainingEl = document.getElementById('calories-remaining');
+  const ringLabelEl = document.querySelector('.ring-label');
+  const limitWarning = document.getElementById('limit-warning');
+  const exceededKcalVal = document.getElementById('exceeded-kcal-val');
+  const progressCard = document.querySelector('.progress-card');
+
+  if (targetCaloriesEl) targetCaloriesEl.textContent = state.tdeeGoal.toLocaleString();
+  if (foodCaloriesEl) foodCaloriesEl.textContent = totalConsumed.toLocaleString();
+  if (burnCaloriesEl) burnCaloriesEl.textContent = '0';
+
   const remaining = state.tdeeGoal - totalConsumed;
-  const remainingDisplay = document.getElementById('remaining-display');
   
-  if (remainingDisplay) {
+  if (caloriesRemainingEl) {
     if (remaining < 0) {
-      remainingDisplay.textContent = Math.abs(remaining).toLocaleString();
-      remainingDisplay.className = 'metric-val text-warning';
-      document.querySelector('.metric-item:first-child .metric-label').textContent = 'Surplus';
+      caloriesRemainingEl.textContent = Math.abs(remaining).toLocaleString();
+      caloriesRemainingEl.style.color = 'var(--color-warning)';
+      if (ringLabelEl) ringLabelEl.textContent = 'Exceeded';
       
       const exceededAmt = totalConsumed - state.tdeeGoal;
-      document.getElementById('exceeded-kcal-val').textContent = exceededAmt.toLocaleString();
-      document.getElementById('limit-warning').classList.remove('hidden');
-      document.querySelector('.progress-card').classList.add('exceeded-limit');
+      if (exceededKcalVal) exceededKcalVal.textContent = exceededAmt.toLocaleString();
+      if (limitWarning) limitWarning.classList.remove('hidden');
+      if (progressCard) progressCard.classList.add('exceeded-limit');
     } else {
-      remainingDisplay.textContent = remaining.toLocaleString();
-      remainingDisplay.className = 'metric-val text-success';
-      document.querySelector('.metric-item:first-child .metric-label').textContent = 'Remaining';
+      caloriesRemainingEl.textContent = remaining.toLocaleString();
+      caloriesRemainingEl.style.color = '';
+      if (ringLabelEl) ringLabelEl.textContent = 'Remaining';
       
-      document.getElementById('limit-warning').classList.add('hidden');
-      document.querySelector('.progress-card').classList.remove('exceeded-limit');
+      if (limitWarning) limitWarning.classList.add('hidden');
+      if (progressCard) progressCard.classList.remove('exceeded-limit');
     }
   }
 
-  const percentageDisplay = document.getElementById('percentage-display');
-  if (percentageDisplay) {
-    const percentage = state.tdeeGoal > 0 ? Math.round((totalConsumed / state.tdeeGoal) * 100) : 0;
-    percentageDisplay.textContent = `${percentage}%`;
+  // Toggle Daily Progress empty state
+  const progressEmptyState = document.getElementById('progress-empty-state');
+  if (totalConsumed === 0) {
+    if (progressEmptyState) progressEmptyState.classList.remove('hidden');
+  } else {
+    if (progressEmptyState) progressEmptyState.classList.add('hidden');
   }
 
   const progressRing = document.getElementById('progress-ring-fill');
   if (progressRing) {
-    const circumference = 565.48; // radius=90
+    const circumference = 464.95; // radius=74
     const percentFactor = state.tdeeGoal > 0 ? Math.min(totalConsumed / state.tdeeGoal, 1.0) : 0;
     const offset = circumference - (percentFactor * circumference);
     progressRing.style.strokeDashoffset = offset;
@@ -320,9 +335,85 @@ export function updateSummaryMetrics() {
       progressRing.style.stroke = 'var(--accent-primary)';
     }
   }
+
+  // Calculate consumed macros for the day
+  const totalCarb = dailyEntries.reduce((sum, item) => sum + (parseFloat(item.carb) || 0), 0);
+  const totalProtein = dailyEntries.reduce((sum, item) => sum + (parseFloat(item.protein) || 0), 0);
+  const totalFat = dailyEntries.reduce((sum, item) => sum + (parseFloat(item.fat) || 0), 0);
+
+  // Calculate targets dynamically based on 30% Carb / 40% Protein / 30% Fat split of total daily calorie goal
+  const carbTarget = Math.round((state.tdeeGoal * 0.30) / 4);
+  const proteinTarget = Math.round((state.tdeeGoal * 0.40) / 4);
+  const fatTarget = Math.round((state.tdeeGoal * 0.30) / 9);
+
+  const macroCircumference = 175.93; // 2 * Math.PI * 28
+
+  // Update Carb Ring
+  const carbRing = document.getElementById('carb-progress-ring-fill');
+  if (carbRing) {
+    const carbPercentFactor = carbTarget > 0 ? Math.min(totalCarb / carbTarget, 1.0) : 0;
+    const carbOffset = macroCircumference - (carbPercentFactor * macroCircumference);
+    carbRing.style.strokeDashoffset = carbOffset;
+    if (totalCarb > carbTarget) {
+      carbRing.style.stroke = 'var(--color-warning)';
+    } else {
+      carbRing.style.stroke = 'var(--macro-carb)';
+    }
+  }
+  const carbStatsEl = document.getElementById('carb-stats');
+  if (carbStatsEl) {
+    carbStatsEl.innerHTML = `<strong>${Math.round(totalCarb)}</strong> / ${carbTarget}g`;
+  }
+
+  // Update Protein Ring
+  const proteinRing = document.getElementById('protein-progress-ring-fill');
+  if (proteinRing) {
+    const proteinPercentFactor = proteinTarget > 0 ? Math.min(totalProtein / proteinTarget, 1.0) : 0;
+    const proteinOffset = macroCircumference - (proteinPercentFactor * macroCircumference);
+    proteinRing.style.strokeDashoffset = proteinOffset;
+    if (totalProtein > proteinTarget) {
+      proteinRing.style.stroke = 'var(--color-warning)';
+    } else {
+      proteinRing.style.stroke = 'var(--macro-protein)';
+    }
+  }
+  const proteinStatsEl = document.getElementById('protein-stats');
+  if (proteinStatsEl) {
+    proteinStatsEl.innerHTML = `<strong>${Math.round(totalProtein)}</strong> / ${proteinTarget}g`;
+  }
+
+  // Update Fat Ring
+  const fatRing = document.getElementById('fat-progress-ring-fill');
+  if (fatRing) {
+    const fatPercentFactor = fatTarget > 0 ? Math.min(totalFat / fatTarget, 1.0) : 0;
+    const fatOffset = macroCircumference - (fatPercentFactor * macroCircumference);
+    fatRing.style.strokeDashoffset = fatOffset;
+    if (totalFat > fatTarget) {
+      fatRing.style.stroke = 'var(--color-warning)';
+    } else {
+      fatRing.style.stroke = 'var(--macro-fat)';
+    }
+  }
+  const fatStatsEl = document.getElementById('fat-stats');
+  if (fatStatsEl) {
+    fatStatsEl.innerHTML = `<strong>${Math.round(totalFat)}</strong> / ${fatTarget}g`;
+  }
 }
 
 export function renderAnalyticsView() {
+  // Synchronize range toggle buttons based on state
+  const range7dBtn = document.getElementById('range-7d-btn');
+  const range30dBtn = document.getElementById('range-30d-btn');
+  if (range7dBtn && range30dBtn) {
+    if (state.analyticsRange === 7) {
+      range7dBtn.classList.add('active');
+      range30dBtn.classList.remove('active');
+    } else {
+      range30dBtn.classList.add('active');
+      range7dBtn.classList.remove('active');
+    }
+  }
+
   const dates = [];
   const labels = [];
   const rawDates = [];
