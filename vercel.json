@@ -7,6 +7,9 @@
     {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
+    },
+    {
+      "regions": ["sin1"]
     }
   ]
 }
