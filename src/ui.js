@@ -463,7 +463,7 @@ export function renderAnalyticsView() {
   renderCalorieChart("#analytics-chart", labels, values, state.tdeeGoal, state.theme);
 }
 
-export function prefillMealModalFromScan(result) {
+export function prefillMealModalFromScan(result, imageBase64) {
   const mealModal = document.getElementById('meal-modal');
   document.getElementById('meal-modal-title').textContent = '\u2728 AI Scanned Meal';
   document.getElementById('meal-id-input').value = '';
@@ -477,6 +477,7 @@ export function prefillMealModalFromScan(result) {
   document.getElementById('meal-fat-input').value = result.fat;
   document.getElementById('meal-carb-input').value = result.carb;
   document.getElementById('meal-ai-scanned').value = '1';
+  document.getElementById('meal-image-input').value = imageBase64 || '';
 
   // Store original AI guess for telemetry logging
   state.lastAiGuess = {

@@ -306,9 +306,10 @@ async function confirmAndScan() {
   try {
     const result = await analyzeFood(_capturedBase64);
 
-    // Close camera modal, open meal modal pre-filled
+    // Close camera modal, open meal modal pre-filled with the image
+    const imageToPass = _capturedBase64;
     closeCameraModal();
-    prefillMealModalFromScan(result);
+    prefillMealModalFromScan(result, imageToPass);
 
   } catch (err) {
     showToast(`AI scan failed: ${err.message}`, 'warning');
