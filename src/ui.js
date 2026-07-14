@@ -329,6 +329,11 @@ export function updateSummaryMetrics() {
   if (foodCaloriesEl) foodCaloriesEl.textContent = totalConsumed.toLocaleString();
   if (burnCaloriesEl) burnCaloriesEl.textContent = '0';
 
+  const mealKcalSumEl = document.getElementById('meal-kcal-sum');
+  if (mealKcalSumEl) {
+    mealKcalSumEl.textContent = `${totalConsumed.toLocaleString()} kcal`;
+  }
+
   const remaining = state.tdeeGoal - totalConsumed;
   
   if (caloriesRemainingEl) {
