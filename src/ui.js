@@ -431,14 +431,16 @@ export function renderAnalyticsView() {
   }
   
   const values = rawDates.map(dateStr => {
-    return state.entries
-      .filter(e => e.date === dateStr)
-      .reduce((sum, item) => sum + parseInt(item.calories, 10), 0);
+    const dayEntries = state.entries.filter(e => e.date === dateStr);
+    if (dayEntries.length === 0) {
+      return null;
+    }
+    return dayEntries.reduce((sum, item) => sum + parseInt(item.calories, 10), 0);
   });
   
   // Stats
-  const activeDays = values.filter(v => v > 0);
-  const totalIntake = values.reduce((sum, v) => sum + v, 0);
+  const activeDays = values.filter(v => v !== null && v > 0);
+  const totalIntake = values.reduce((sum, v) => sum + (v || 0), 0);
   
   const avgKcal = activeDays.length > 0 ? Math.round(totalIntake / activeDays.length) : 0;
   

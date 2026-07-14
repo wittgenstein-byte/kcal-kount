@@ -46,7 +46,7 @@ export function renderCalorieChart(chartContainerSelector, labels, values, tdeeG
   
   const options = {
     chart: {
-      type: 'area',
+      type: 'bar',
       height: 320,
       toolbar: { show: false },
       fontFamily: 'Outfit, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
@@ -58,27 +58,34 @@ export function renderCalorieChart(chartContainerSelector, labels, values, tdeeG
         speed: 800
       }
     },
+    plotOptions: {
+      bar: {
+        borderRadius: 8,
+        borderRadiusApplication: 'end',
+        columnWidth: '60%'
+      }
+    },
     stroke: {
-      curve: 'smooth',
-      width: 3,
-      colors: [accentPrimary]
+      show: true,
+      width: 0,
+      colors: ['transparent']
     },
     fill: {
       type: 'gradient',
       gradient: {
         shadeIntensity: 1,
-        opacityFrom: 0.4,
-        opacityTo: 0.05,
+        opacityFrom: 0.85,
+        opacityTo: 0.25,
         colorStops: [
           {
             offset: 0,
             color: accentPrimary,
-            opacity: 0.4
+            opacity: 0.85
           },
           {
             offset: 100,
             color: accentPrimary,
-            opacity: 0.05
+            opacity: 0.25
           }
         ]
       }
@@ -101,7 +108,7 @@ export function renderCalorieChart(chartContainerSelector, labels, values, tdeeG
     },
     yaxis: {
       labels: {
-        formatter: (val) => `${Math.round(val)} kcal`,
+        formatter: (val) => val != null ? `${Math.round(val)} kcal` : '',
         style: {
           colors: textSecondary,
           fontSize: '11px',
@@ -117,15 +124,6 @@ export function renderCalorieChart(chartContainerSelector, labels, values, tdeeG
         right: 15,
         bottom: 0,
         left: 10
-      }
-    },
-    markers: {
-      size: 4,
-      colors: [accentPrimary],
-      strokeColors: '#ffffff',
-      strokeWidth: 2,
-      hover: {
-        size: 6
       }
     },
     dataLabels: {
