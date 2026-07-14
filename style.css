@@ -533,28 +533,33 @@ input:focus, select:focus { border-color: var(--input-focus); }
   font-size: 1.75rem;
   border-radius: 12px;
 }
-.meal-card-image-ai-badge {
-  position: absolute;
-  top: 4px;
-  left: 4px;
+.meal-card-title-row {
   display: flex;
   align-items: center;
-  gap: 0.12rem;
-  background-color: #FFDA62;
-  border: 0.75px solid #FF6A1C;
-  color: #FF6A1C;
-  font-size: 8px;
-  font-weight: 800;
-  padding: 0.1rem 0.25rem;
+  gap: 0.35rem;
+  min-width: 0;
+}
+.meal-card-ai-badge-inline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /*padding: 0.05rem 0.15rem;*/
   border-radius: 9999px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  z-index: 2;
+  flex-shrink: 0;
+  /*background-color: rgba(245, 158, 11, 0.1);*/
+  /*border: 0.75px solid rgba(245, 158, 11, 0.35);*/
+  color: #ecbf1e;
   line-height: 1;
 }
-.meal-card-image-ai-badge svg {
-  width: 10px;
-  height: 10px;
+.meal-card-ai-badge-inline svg {
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
+}
+:root[data-theme="dark"] .meal-card-ai-badge-inline {
+  background-color: rgba(251, 191, 36, 0.1);
+  border-color: rgba(251, 191, 36, 0.3);
+  color: #fbbf24;
 }
 .meal-card-content {
   display: flex;
@@ -577,6 +582,8 @@ input:focus, select:focus { border-color: var(--input-focus); }
   white-space: nowrap;
   margin: 0;
   line-height: 1.2;
+  flex: 1;
+  min-width: 0;
 }
 .meal-card-time {
   font-size: 0.7rem;
