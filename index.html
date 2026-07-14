@@ -141,54 +141,48 @@
               </div>
             </div>
 
-            <!-- Daily Progress Empty State (Motivational Greeting) -->
-            <div id="progress-empty-state" class="progress-empty-state hidden">
-              <div class="empty-state-icon">✨</div>
-              <p class="empty-state-text">Your day is a fresh canvas. Start logging to fuel your body!</p>
-            </div>
-          </div>
-
-          <!-- 2. การ์ดสารอาหารแยกเฉพาะ (กล่องล่าง) -->
-          <div class="dashboard-card progress-card macros-section-card card-glow">
-            <h3 class="section-title">Macros</h3>
-            <div class="macro-horizontal-grid">
-              <!-- คาร์บ -->
-              <div class="macro-col-item">
-                <div class="macro-ring-box">
-                  <svg viewBox="0 0 70 70" width="70" height="70" class="macro-progress-ring-svg">
-                    <circle stroke="var(--border-muted)" stroke-width="6" fill="transparent" r="28" cx="35" cy="35"/>
-                    <circle id="carb-progress-ring-fill" class="macro-progress-ring-fill" stroke="var(--macro-carb)" stroke-width="6" stroke-linecap="round" fill="transparent" r="28" cx="35" cy="35"/>
-                  </svg>
-                  <span class="macro-center-emoji">🍞</span>
+            <!-- Macros Grid inside Daily Progress Card -->
+            <div class="summary-macros-section">
+              <h3 class="section-title">Macros</h3>
+              <div class="macro-horizontal-grid">
+                <!-- คาร์บ -->
+                <div class="macro-col-item">
+                  <div class="macro-ring-box">
+                    <svg viewBox="0 0 70 70" width="70" height="70" class="macro-progress-ring-svg">
+                      <circle stroke="var(--border-muted)" stroke-width="6" fill="transparent" r="28" cx="35" cy="35"/>
+                      <circle id="carb-progress-ring-fill" class="macro-progress-ring-fill" stroke="var(--macro-carb)" stroke-width="6" stroke-linecap="round" fill="transparent" r="28" cx="35" cy="35"/>
+                    </svg>
+                    <span class="macro-center-emoji">🍞</span>
+                  </div>
+                  <span class="macro-name">Carbs</span>
+                  <span class="macro-amount" id="carb-stats"><strong>0</strong> / 117g</span>
                 </div>
-                <span class="macro-name">Carbs</span>
-                <span class="macro-amount" id="carb-stats"><strong>0</strong> / 117g</span>
-              </div>
 
-              <!-- โปรตีน -->
-              <div class="macro-col-item">
-                <div class="macro-ring-box">
-                  <svg viewBox="0 0 70 70" width="70" height="70" class="macro-progress-ring-svg">
-                    <circle stroke="var(--border-muted)" stroke-width="6" fill="transparent" r="28" cx="35" cy="35"/>
-                    <circle id="protein-progress-ring-fill" class="macro-progress-ring-fill" stroke="var(--macro-protein)" stroke-width="6" stroke-linecap="round" fill="transparent" r="28" cx="35" cy="35"/>
-                  </svg>
-                  <span class="macro-center-emoji">🥩</span>
+                <!-- โปรตีน -->
+                <div class="macro-col-item">
+                  <div class="macro-ring-box">
+                    <svg viewBox="0 0 70 70" width="70" height="70" class="macro-progress-ring-svg">
+                      <circle stroke="var(--border-muted)" stroke-width="6" fill="transparent" r="28" cx="35" cy="35"/>
+                      <circle id="protein-progress-ring-fill" class="macro-progress-ring-fill" stroke="var(--macro-protein)" stroke-width="6" stroke-linecap="round" fill="transparent" r="28" cx="35" cy="35"/>
+                    </svg>
+                    <span class="macro-center-emoji">🥩</span>
+                  </div>
+                  <span class="macro-name">Protein</span>
+                  <span class="macro-amount" id="protein-stats"><strong>0</strong> / 156g</span>
                 </div>
-                <span class="macro-name">Protein</span>
-                <span class="macro-amount" id="protein-stats"><strong>0</strong> / 156g</span>
-              </div>
 
-              <!-- ไขมัน -->
-              <div class="macro-col-item">
-                <div class="macro-ring-box">
-                  <svg viewBox="0 0 70 70" width="70" height="70" class="macro-progress-ring-svg">
-                    <circle stroke="var(--border-muted)" stroke-width="6" fill="transparent" r="28" cx="35" cy="35"/>
-                    <circle id="fat-progress-ring-fill" class="macro-progress-ring-fill" stroke="var(--macro-fat)" stroke-width="6" stroke-linecap="round" fill="transparent" r="28" cx="35" cy="35"/>
-                  </svg>
-                  <span class="macro-center-emoji">🧀</span>
+                <!-- ไขมัน -->
+                <div class="macro-col-item">
+                  <div class="macro-ring-box">
+                    <svg viewBox="0 0 70 70" width="70" height="70" class="macro-progress-ring-svg">
+                      <circle stroke="var(--border-muted)" stroke-width="6" fill="transparent" r="28" cx="35" cy="35"/>
+                      <circle id="fat-progress-ring-fill" class="macro-progress-ring-fill" stroke="var(--macro-fat)" stroke-width="6" stroke-linecap="round" fill="transparent" r="28" cx="35" cy="35"/>
+                    </svg>
+                    <span class="macro-center-emoji">🧀</span>
+                  </div>
+                  <span class="macro-name">Fat</span>
+                  <span class="macro-amount" id="fat-stats"><strong>0</strong> / 52g</span>
                 </div>
-                <span class="macro-name">Fat</span>
-                <span class="macro-amount" id="fat-stats"><strong>0</strong> / 52g</span>
               </div>
             </div>
           </div>

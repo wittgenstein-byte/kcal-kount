@@ -332,6 +332,17 @@ body {
   font-weight: bold;
 }
 
+.summary-macros-section {
+  border-top: 1px solid var(--card-border);
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+}
+.summary-macros-section .section-title {
+  font-size: 0.95rem;
+  margin-bottom: 0.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
 
 .macro-horizontal-grid {
   display: grid;
