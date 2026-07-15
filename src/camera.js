@@ -329,18 +329,41 @@ function retakePhoto() {
   startVideoStream();
 }
 
+async function uploadImageToR2(base64DataUrl) {
+  const response = await fetch('/api/images/upload', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ image: base64DataUrl })
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Upload failed: ${errText}`);
+  }
+
+  return await response.json(); // returns { url: "/api/images/meal-..." }
+}
+
 async function confirmAndScan() {
   if (!_capturedBase64) return;
 
   showCameraStep('loading');
 
   try {
+    // 1. Upload captured photo to Cloudflare R2
+    showToast('Uploading photo to R2...', 'info');
+    const uploadRes = await uploadImageToR2(_capturedBase64);
+    const imageUrl = uploadRes.url;
+
+    // 2. Perform AI food recognition
+    showToast('Analyzing food with AI...', 'info');
     const result = await analyzeFood(_capturedBase64);
 
-    // Close camera modal, open meal modal pre-filled with the image
-    const imageToPass = _capturedBase64;
+    // 3. Close scanner and open meal logging modal
     closeCameraModal();
-    prefillMealModalFromScan(result, imageToPass);
+    prefillMealModalFromScan(result, imageUrl);
 
   } catch (err) {
     showToast(`AI scan failed: ${err.message}`, 'warning');

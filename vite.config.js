@@ -4,7 +4,13 @@ import aiApiProxy from './vite-plugin-ai-proxy.js';
 export default defineConfig({
   plugins: [aiApiProxy()],
   server: {
-    allowedHosts: true
+    allowedHosts: true,
+    proxy: {
+      '/api/images': {
+        target: 'http://127.0.0.1:8787',
+        changeOrigin: true
+      }
+    }
   },
   build: {
     rollupOptions: {
