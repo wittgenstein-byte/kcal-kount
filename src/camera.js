@@ -4,6 +4,7 @@ import { analyzeFood } from './ai.js';
 
 let _capturedBase64 = null;
 let _stream = null;
+let _isTorchOn = false;
 
 function slugify(str) {
   return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -44,6 +45,10 @@ function stopVideoStream() {
     _stream.getTracks().forEach(track => track.stop());
     _stream = null;
   }
+  _isTorchOn = false;
+  const flashBtn = document.getElementById('camera-flash-btn');
+  if (flashBtn) flashBtn.classList.remove('active');
+
   const video = document.getElementById('camera-video');
   if (video) {
     video.srcObject = null;
@@ -53,6 +58,32 @@ function stopVideoStream() {
   if (guide) guide.classList.remove('active');
   const prompt = document.querySelector('.camera-capture-prompt');
   if (prompt) prompt.classList.remove('hidden');
+}
+
+async function toggleTorch() {
+  if (!_stream) return;
+  const track = _stream.getVideoTracks()[0];
+  if (!track) return;
+
+  const capabilities = track.getCapabilities ? track.getCapabilities() : {};
+  if (!capabilities.torch) {
+    showToast('Flash/Torch is not supported on this camera/device', 'info');
+    return;
+  }
+
+  _isTorchOn = !_isTorchOn;
+  try {
+    await track.applyConstraints({
+      advanced: [{ torch: _isTorchOn }]
+    });
+    const flashBtn = document.getElementById('camera-flash-btn');
+    if (flashBtn) {
+      flashBtn.classList.toggle('active', _isTorchOn);
+    }
+  } catch (err) {
+    console.error('Failed to toggle torch:', err);
+    showToast('Could not toggle flash', 'warning');
+  }
 }
 
 function captureVideoFrame() {
@@ -331,6 +362,7 @@ export function setupCameraListeners() {
   const closeCameraBtn = document.getElementById('close-camera-modal');
   const captureBtn = document.getElementById('capture-btn');
   const uploadImgBtn = document.getElementById('upload-img-btn');
+  const flashBtn = document.getElementById('camera-flash-btn');
   const cameraCaptureInput = document.getElementById('camera-capture-input');
   const cameraFileInput = document.getElementById('camera-file-input');
   const retakeBtn = document.getElementById('retake-btn');
@@ -338,6 +370,7 @@ export function setupCameraListeners() {
   const cameraModal = document.getElementById('camera-modal');
 
   if (closeCameraBtn) closeCameraBtn.addEventListener('click', () => closeCameraModal());
+  if (flashBtn) flashBtn.addEventListener('click', () => toggleTorch());
 
   // Shutter button (capture="environment") click/change listener
   if (captureBtn) {
