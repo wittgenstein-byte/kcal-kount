@@ -191,41 +191,79 @@ export function renderDailyLog() {
       );
 
       // Build macro pills HTML
-      let macroPillsHtml = '';
-      if (item.protein != null || item.fat != null || item.carb != null) {
-        macroPillsHtml = `
-          <div class="item-macro-pills">
-            <span class="macro-pill macro-pill--protein">P: <strong>${escapeHtml(String(item.protein ?? '--'))}g</strong></span>
-            <span class="macro-pill macro-pill--fat">F: <strong>${escapeHtml(String(item.fat ?? '--'))}g</strong></span>
-            <span class="macro-pill macro-pill--carb">C: <strong>${escapeHtml(String(item.carb ?? '--'))}g</strong></span>
-            ${item.aiScanned ? '<span class="macro-pill macro-pill--ai">\u2728 AI</span>' : ''}
-          </div>
-        `;
-      }
+      const proteinStr = item.protein != null ? `${item.protein}g` : '--g';
+      const carbStr = item.carb != null ? `${item.carb}g` : '--g';
+      const fatStr = item.fat != null ? `${item.fat}g` : '--g';
+      const macroPillsHtml = `
+        <div class="meal-card-macros">
+          <span class="macro-badge macro-badge--protein">P: <strong>${escapeHtml(proteinStr)}</strong></span>
+          <span class="macro-badge macro-badge--carb">C: <strong>${escapeHtml(carbStr)}</strong></span>
+          <span class="macro-badge macro-badge--fat">F: <strong>${escapeHtml(fatStr)}</strong></span>
+        </div>
+      `;
 
       const li = document.createElement('li');
-      li.className = 'meal-item';
+      li.className = 'meal-card';
       li.innerHTML = `
-        <div class="item-info">
-          <span class="item-name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</span>
-          <div class="item-meta">
-            <span class="item-time">${escapeHtml(item.time || 'Logged')}</span>
-            <span class="item-meta-divider">•</span>
-            <span class="item-kcal-val">${parseInt(item.calories, 10).toLocaleString()} kcal</span>
-          </div>
-          ${macroPillsHtml}
+        <!-- Left Side: Food Image Box -->
+        <div class="meal-card-image-box">
+          ${item.image 
+            ? `<img src="${item.image}" class="meal-card-image" alt="${escapeHtml(item.name)}">` 
+            : `<div class="meal-card-image-placeholder">🍲</div>`
+          }
         </div>
-        <div class="item-kcal-actions">
-          <div class="actions-wrapper">
-            <button class="icon-btn action-btn btn-fav ${isFav ? 'active' : ''}" data-id="${item.id}" title="${isFav ? 'In Favorites' : 'Add to Favorites'}">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
-            </button>
-            <button class="icon-btn action-btn btn-edit" data-id="${item.id}" title="Edit Entry">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
-            </button>
-            <button class="icon-btn action-btn btn-delete" data-id="${item.id}" title="Delete Entry">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M10 11v6M14 11v6"/></svg>
-            </button>
+
+        <!-- Right Side: Content Container -->
+        <div class="meal-card-content">
+          <!-- Title Row: Name & Time -->
+          <div class="meal-card-meta-row">
+            <div class="meal-card-title-row">
+              <h3 class="meal-card-name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</h3>
+              ${item.aiScanned ? `
+                <span class="meal-card-ai-badge-inline" title="AI Scanned">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12.8768 16.1682C13.0292 15.7535 13.6375 15.7535 13.7899 16.1682L14.2066 17.3023C14.2554 17.435 14.3637 17.5395 14.5013 17.5865L15.6774 17.9884C16.1075 18.1353 16.1075 18.7218 15.6774 18.8688L14.5013 19.2706C14.3637 19.3177 14.2554 19.4221 14.2066 19.5549L13.7899 20.6889C13.6375 21.1037 13.0292 21.1037 13.7899 20.6889L12.4601 19.5549C12.4113 19.4221 12.303 19.3177 12.1653 19.2706L10.9892 18.8688C10.5591 18.7218 10.5591 18.1353 10.9892 17.9884L12.1653 17.5865C12.303 17.5395 12.4113 17.435 12.4601 17.3023L12.8768 16.1682Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path>
+                    <path d="M14.6394 3.47278C14.8711 2.84241 15.7956 2.84241 16.0272 3.47278L16.8211 5.63332C16.8953 5.8351 17.0599 5.99384 17.2691 6.06534L19.5097 6.83089C20.1634 7.05426 20.1634 7.94574 19.5097 8.16911L17.2691 8.93466C17.0599 9.00616 16.8953 9.1649 16.8211 9.36668L16.0272 11.5272C15.7956 12.1576 14.8711 12.1576 14.6394 11.5272L13.8455 9.36668C13.7714 9.1649 13.6068 9.00616 13.3975 8.93466L11.157 8.16911C10.5032 7.94574 10.5032 7.05426 11.157 6.83089L13.3975 6.06534C13.6068 5.99384 13.7714 5.8351 13.8455 5.63332L14.6394 3.47278Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path>
+                    <path d="M6.48641 9.36289C6.65786 8.87904 7.34214 8.87904 7.51358 9.36289L7.9824 10.686C8.03728 10.8409 8.15913 10.9627 8.31401 11.0176L9.63711 11.4864C10.121 11.6579 10.121 12.3421 9.63711 12.5136L8.31401 12.9824C8.15913 13.0373 8.03728 13.1591 7.9824 13.314L7.51358 14.6371C7.34214 15.121 6.65786 15.121 6.48641 14.6371L6.0176 13.314C5.96272 13.1591 5.84087 13.0373 5.68599 12.9824L4.36289 12.5136C3.87904 12.3421 3.87904 11.6579 4.36289 11.4864L5.68599 11.0176C5.84087 10.9627 5.96272 10.8409 6.0176 10.686L6.48641 9.36289Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path>
+                  </svg>
+                </span>
+              ` : ''}
+            </div>
+            <p class="meal-card-time">${escapeHtml(item.time || 'Logged')}</p>
+          </div>
+
+          <!-- Linear Macro Badges -->
+          ${macroPillsHtml}
+
+          <!-- Bottom Row: Calories & Actions -->
+          <div class="meal-card-bottom-row">
+            <div class="meal-card-calories">
+              <span class="meal-card-kcal-val">${parseInt(item.calories, 10).toLocaleString()}</span>
+              <span class="meal-card-kcal-label">kcal</span>
+            </div>
+
+            <div class="meal-card-actions">
+              <!-- Favorite Button -->
+              <button class="meal-card-action-btn btn-fav ${isFav ? 'active' : ''}" data-id="${item.id}" title="${isFav ? 'In Favorites' : 'Add to Favorites'}" aria-label="Favorite item">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="${isFav ? 'currentColor' : 'none'}" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
+                </svg>
+              </button>
+              
+              <!-- Edit Button -->
+              <button class="meal-card-action-btn btn-edit" data-id="${item.id}" title="Edit Entry" aria-label="Edit entry">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
+                </svg>
+              </button>
+
+              <!-- Delete Button -->
+              <button class="meal-card-action-btn btn-delete" data-id="${item.id}" title="Delete Entry" aria-label="Delete entry">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       `;
@@ -292,6 +330,11 @@ export function updateSummaryMetrics() {
   if (foodCaloriesEl) foodCaloriesEl.textContent = totalConsumed.toLocaleString();
   if (burnCaloriesEl) burnCaloriesEl.textContent = '0';
 
+  const mealKcalSumEl = document.getElementById('meal-kcal-sum');
+  if (mealKcalSumEl) {
+    mealKcalSumEl.textContent = `${totalConsumed.toLocaleString()} kcal`;
+  }
+
   const remaining = state.tdeeGoal - totalConsumed;
   
   if (caloriesRemainingEl) {
@@ -314,13 +357,7 @@ export function updateSummaryMetrics() {
     }
   }
 
-  // Toggle Daily Progress empty state
-  const progressEmptyState = document.getElementById('progress-empty-state');
-  if (totalConsumed === 0) {
-    if (progressEmptyState) progressEmptyState.classList.remove('hidden');
-  } else {
-    if (progressEmptyState) progressEmptyState.classList.add('hidden');
-  }
+
 
   const progressRing = document.getElementById('progress-ring-fill');
   if (progressRing) {
@@ -431,14 +468,16 @@ export function renderAnalyticsView() {
   }
   
   const values = rawDates.map(dateStr => {
-    return state.entries
-      .filter(e => e.date === dateStr)
-      .reduce((sum, item) => sum + parseInt(item.calories, 10), 0);
+    const dayEntries = state.entries.filter(e => e.date === dateStr);
+    if (dayEntries.length === 0) {
+      return null;
+    }
+    return dayEntries.reduce((sum, item) => sum + parseInt(item.calories, 10), 0);
   });
   
   // Stats
-  const activeDays = values.filter(v => v > 0);
-  const totalIntake = values.reduce((sum, v) => sum + v, 0);
+  const activeDays = values.filter(v => v !== null && v > 0);
+  const totalIntake = values.reduce((sum, v) => sum + (v || 0), 0);
   
   const avgKcal = activeDays.length > 0 ? Math.round(totalIntake / activeDays.length) : 0;
   
@@ -461,7 +500,7 @@ export function renderAnalyticsView() {
   renderCalorieChart("#analytics-chart", labels, values, state.tdeeGoal, state.theme);
 }
 
-export function prefillMealModalFromScan(result) {
+export function prefillMealModalFromScan(result, imageBase64) {
   const mealModal = document.getElementById('meal-modal');
   document.getElementById('meal-modal-title').textContent = '\u2728 AI Scanned Meal';
   document.getElementById('meal-id-input').value = '';
@@ -475,6 +514,7 @@ export function prefillMealModalFromScan(result) {
   document.getElementById('meal-fat-input').value = result.fat;
   document.getElementById('meal-carb-input').value = result.carb;
   document.getElementById('meal-ai-scanned').value = '1';
+  document.getElementById('meal-image-input').value = imageBase64 || '';
 
   // Store original AI guess for telemetry logging
   state.lastAiGuess = {

@@ -141,54 +141,48 @@
               </div>
             </div>
 
-            <!-- Daily Progress Empty State (Motivational Greeting) -->
-            <div id="progress-empty-state" class="progress-empty-state hidden">
-              <div class="empty-state-icon">✨</div>
-              <p class="empty-state-text">Your day is a fresh canvas. Start logging to fuel your body!</p>
-            </div>
-          </div>
-
-          <!-- 2. การ์ดสารอาหารแยกเฉพาะ (กล่องล่าง) -->
-          <div class="dashboard-card progress-card macros-section-card card-glow">
-            <h3 class="section-title">Macros</h3>
-            <div class="macro-horizontal-grid">
-              <!-- คาร์บ -->
-              <div class="macro-col-item">
-                <div class="macro-ring-box">
-                  <svg viewBox="0 0 70 70" width="70" height="70" class="macro-progress-ring-svg">
-                    <circle stroke="var(--border-muted)" stroke-width="6" fill="transparent" r="28" cx="35" cy="35"/>
-                    <circle id="carb-progress-ring-fill" class="macro-progress-ring-fill" stroke="var(--macro-carb)" stroke-width="6" stroke-linecap="round" fill="transparent" r="28" cx="35" cy="35"/>
-                  </svg>
-                  <span class="macro-center-emoji">🍞</span>
+            <!-- Macros Grid inside Daily Progress Card -->
+            <div class="summary-macros-section">
+              <h3 class="section-title">Macros</h3>
+              <div class="macro-horizontal-grid">
+                <!-- คาร์บ -->
+                <div class="macro-col-item">
+                  <div class="macro-ring-box">
+                    <svg viewBox="0 0 70 70" width="70" height="70" class="macro-progress-ring-svg">
+                      <circle stroke="var(--border-muted)" stroke-width="6" fill="transparent" r="28" cx="35" cy="35"/>
+                      <circle id="carb-progress-ring-fill" class="macro-progress-ring-fill" stroke="var(--macro-carb)" stroke-width="6" stroke-linecap="round" fill="transparent" r="28" cx="35" cy="35"/>
+                    </svg>
+                    <span class="macro-center-emoji">🍞</span>
+                  </div>
+                  <span class="macro-name">Carbs</span>
+                  <span class="macro-amount" id="carb-stats"><strong>0</strong> / 117g</span>
                 </div>
-                <span class="macro-name">Carbs</span>
-                <span class="macro-amount" id="carb-stats"><strong>0</strong> / 117g</span>
-              </div>
 
-              <!-- โปรตีน -->
-              <div class="macro-col-item">
-                <div class="macro-ring-box">
-                  <svg viewBox="0 0 70 70" width="70" height="70" class="macro-progress-ring-svg">
-                    <circle stroke="var(--border-muted)" stroke-width="6" fill="transparent" r="28" cx="35" cy="35"/>
-                    <circle id="protein-progress-ring-fill" class="macro-progress-ring-fill" stroke="var(--macro-protein)" stroke-width="6" stroke-linecap="round" fill="transparent" r="28" cx="35" cy="35"/>
-                  </svg>
-                  <span class="macro-center-emoji">🥩</span>
+                <!-- โปรตีน -->
+                <div class="macro-col-item">
+                  <div class="macro-ring-box">
+                    <svg viewBox="0 0 70 70" width="70" height="70" class="macro-progress-ring-svg">
+                      <circle stroke="var(--border-muted)" stroke-width="6" fill="transparent" r="28" cx="35" cy="35"/>
+                      <circle id="protein-progress-ring-fill" class="macro-progress-ring-fill" stroke="var(--macro-protein)" stroke-width="6" stroke-linecap="round" fill="transparent" r="28" cx="35" cy="35"/>
+                    </svg>
+                    <span class="macro-center-emoji">🥩</span>
+                  </div>
+                  <span class="macro-name">Protein</span>
+                  <span class="macro-amount" id="protein-stats"><strong>0</strong> / 156g</span>
                 </div>
-                <span class="macro-name">Protein</span>
-                <span class="macro-amount" id="protein-stats"><strong>0</strong> / 156g</span>
-              </div>
 
-              <!-- ไขมัน -->
-              <div class="macro-col-item">
-                <div class="macro-ring-box">
-                  <svg viewBox="0 0 70 70" width="70" height="70" class="macro-progress-ring-svg">
-                    <circle stroke="var(--border-muted)" stroke-width="6" fill="transparent" r="28" cx="35" cy="35"/>
-                    <circle id="fat-progress-ring-fill" class="macro-progress-ring-fill" stroke="var(--macro-fat)" stroke-width="6" stroke-linecap="round" fill="transparent" r="28" cx="35" cy="35"/>
-                  </svg>
-                  <span class="macro-center-emoji">🧀</span>
+                <!-- ไขมัน -->
+                <div class="macro-col-item">
+                  <div class="macro-ring-box">
+                    <svg viewBox="0 0 70 70" width="70" height="70" class="macro-progress-ring-svg">
+                      <circle stroke="var(--border-muted)" stroke-width="6" fill="transparent" r="28" cx="35" cy="35"/>
+                      <circle id="fat-progress-ring-fill" class="macro-progress-ring-fill" stroke="var(--macro-fat)" stroke-width="6" stroke-linecap="round" fill="transparent" r="28" cx="35" cy="35"/>
+                    </svg>
+                    <span class="macro-center-emoji">🧀</span>
+                  </div>
+                  <span class="macro-name">Fat</span>
+                  <span class="macro-amount" id="fat-stats"><strong>0</strong> / 52g</span>
                 </div>
-                <span class="macro-name">Fat</span>
-                <span class="macro-amount" id="fat-stats"><strong>0</strong> / 52g</span>
               </div>
             </div>
           </div>
@@ -318,6 +312,7 @@
       <form id="meal-form">
         <input type="hidden" id="meal-id-input">
         <input type="hidden" id="meal-ai-scanned">
+        <input type="hidden" id="meal-image-input">
         <div class="form-group">
           <label for="meal-name-input">Food/Meal Name</label>
           <input type="text" id="meal-name-input" placeholder="e.g. Oatmeal with Chia Seeds" required>
@@ -549,22 +544,38 @@
     <div class="modal-card camera-modal-card">
       <div class="modal-header">
         <h3 id="camera-modal-title">📷 Scan Food with AI</h3>
-        <button id="close-camera-modal" class="close-btn">&times;</button>
+        <button id="close-camera-modal" class="camera-round-btn close-btn" aria-label="Close camera">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:16px;height:16px;display:block;">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
       </div>
 
       <!-- Step 1: Capture / Upload -->
       <div id="camera-step-preview" class="camera-step">
         <div class="camera-viewfinder" style="position: relative; overflow: hidden; background: #000; display: flex; align-items: center; justify-content: center;">
           <video id="camera-video" autoplay playsinline class="hidden" style="width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0;"></video>
+          
           <div id="camera-guide-overlay" class="camera-guide-overlay">
+            <!-- Real-time Status Chip (above frame) -->
+            <div class="camera-status-chip">
+              <span class="status-dot"></span>
+              <span class="status-text">Detecting plate</span>
+            </div>
+
+            <!-- Guide Box (transparent window) -->
             <div class="camera-guide-box">
               <div class="guide-corner guide-tl"></div>
               <div class="guide-corner guide-tr"></div>
               <div class="guide-corner guide-bl"></div>
               <div class="guide-corner guide-br"></div>
-              <span class="camera-guide-text">Align Food Here</span>
             </div>
+
+            <!-- Instruction Text (below frame) -->
+            <div class="camera-guide-instruction">Align Food Here</div>
           </div>
+
           <div class="camera-capture-prompt">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="fallback-icon">
               <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
@@ -575,19 +586,32 @@
           </div>
         </div>
         <div class="camera-controls">
-          <!-- Upload button styled as a label enclosing the file input for native user gesture trigger -->
-          <label id="upload-img-btn" class="upload-img-btn" aria-label="Upload photo" title="Upload from Gallery" style="position: relative; overflow: hidden;">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;display:block;">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-            </svg>
-            <input type="file" id="camera-file-input" accept="image/*, .heic, .heif" style="position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; z-index: 10;">
-          </label>
+          <!-- Column 1: Upload button (left) -->
+          <div class="camera-control-col left-col">
+            <label id="upload-img-btn" class="camera-round-btn upload-img-btn" aria-label="Upload photo" title="Upload from Gallery" style="position: relative; overflow: hidden;">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;display:block;">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              <input type="file" id="camera-file-input" accept="image/*, .heic, .heif" style="position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; z-index: 10;">
+            </label>
+          </div>
 
-          <!-- Shutter button for capturing from video stream or falling back to file input -->
-          <button type="button" id="capture-btn" class="capture-shutter-btn" aria-label="Take photo with camera">
-            <span class="shutter-ring"></span>
-            <span class="shutter-inner"></span>
-          </button>
+          <!-- Column 2: Shutter button (middle) -->
+          <div class="camera-control-col mid-col">
+            <button type="button" id="capture-btn" class="capture-shutter-btn" aria-label="Take photo with camera">
+              <span class="shutter-ring"></span>
+              <span class="shutter-inner"></span>
+            </button>
+          </div>
+          
+          <!-- Column 3: Flash toggle button (right) -->
+          <div class="camera-control-col right-col">
+            <button type="button" id="camera-flash-btn" class="camera-round-btn camera-flash-btn" aria-label="Toggle flash/torch" title="Toggle Flash">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="width:20px;height:20px;display:block;">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+              </svg>
+            </button>
+          </div>
           
           <input type="file" id="camera-capture-input" accept="image/*, .heic, .heif" capture="environment" style="display: none;">
         </div>

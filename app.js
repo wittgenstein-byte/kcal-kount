@@ -552,6 +552,7 @@ function openMealModalForCreate() {
   document.getElementById('meal-fat-input').value = '';
   document.getElementById('meal-carb-input').value = '';
   document.getElementById('meal-ai-scanned').value = '';
+  document.getElementById('meal-image-input').value = '';
   const macroPreview = document.getElementById('meal-macro-preview');
   if (macroPreview) macroPreview.classList.add('hidden');
 
@@ -573,6 +574,7 @@ function openMealModalForEdit(entry) {
   document.getElementById('meal-fat-input').value = entry.fat !== undefined && entry.fat !== null ? entry.fat : '';
   document.getElementById('meal-carb-input').value = entry.carb !== undefined && entry.carb !== null ? entry.carb : '';
   document.getElementById('meal-ai-scanned').value = entry.aiScanned ? '1' : '';
+  document.getElementById('meal-image-input').value = entry.image || '';
   const macroPreview = document.getElementById('meal-macro-preview');
   if (macroPreview) macroPreview.classList.add('hidden');
 
@@ -590,6 +592,7 @@ function handleMealFormSubmit() {
   const fatRaw = document.getElementById('meal-fat-input').value;
   const carbRaw = document.getElementById('meal-carb-input').value;
   const aiScanned = document.getElementById('meal-ai-scanned').value === '1';
+  const image = document.getElementById('meal-image-input').value;
 
   const protein = proteinRaw !== '' ? parseFloat(proteinRaw) : null;
   const fat = fatRaw !== '' ? parseFloat(fatRaw) : null;
@@ -614,6 +617,7 @@ function handleMealFormSubmit() {
       state.entries[index].fat = fat;
       state.entries[index].carb = carb;
       state.entries[index].aiScanned = aiScanned;
+      state.entries[index].image = image;
 
       // Update telemetry log if this meal was AI scanned
       if (wasAiScanned || aiScanned) {
@@ -645,7 +649,8 @@ function handleMealFormSubmit() {
       aiScanned: aiScanned || false,
       protein: protein,
       fat: fat,
-      carb: carb
+      carb: carb,
+      image: image
     };
 
     state.entries.push(newEntry);
