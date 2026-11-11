@@ -1,3 +1,9 @@
+import { appStorage } from './core/storage.js';
+import { eventBus, APP_EVENTS } from './core/events.js';
+import { mealService } from './domain/MealService.js';
+import { favoriteService } from './domain/FavoriteService.js';
+import { goalService } from './domain/GoalService.js';
+
 // Date helpers needed for state initialization
 export function getLocalDateString(date = new Date()) {
   const year = date.getFullYear();
@@ -6,19 +12,39 @@ export function getLocalDateString(date = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
-export let state = {
-  entries: [],
-  favorites: [],
-  tdeeGoal: 2000,
-  tdeeSettings: {
-    calculationType: 'manual',
-    gender: 'male',
-    weight: '',
-    height: '',
-    age: '',
-    activityLevel: '1.2',
-    objective: '0'
+/**
+ * Reactive application state store
+ * Encapsulates properties and provides backward compatibility for existing code.
+ */
+export const state = {
+  get entries() {
+    return mealService.getAll();
   },
+  set entries(val) {
+    mealService.saveAll(val);
+  },
+
+  get favorites() {
+    return favoriteService.getAll();
+  },
+  set favorites(val) {
+    favoriteService.saveAll(val);
+  },
+
+  get tdeeGoal() {
+    return goalService.getGoal();
+  },
+  set tdeeGoal(val) {
+    goalService.setGoal(val);
+  },
+
+  get tdeeSettings() {
+    return goalService.getSettings();
+  },
+  set tdeeSettings(val) {
+    goalService.saveSettings(val);
+  },
+
   currentDate: getLocalDateString(),
   theme: 'dark',
   activeView: 'dashboard',
@@ -27,67 +53,39 @@ export let state = {
   lastAiGuess: null
 };
 
-// Debounce timer for localStorage saves
-let saveDebounceTimer = null;
-const SAVE_DEBOUNCE_MS = 300;
-
+// Persistence functions kept for backward-compatible interface
 export function saveEntries() {
-  clearTimeout(saveDebounceTimer);
-  saveDebounceTimer = setTimeout(() => {
-    localStorage.setItem('kcal_tracker_entries', JSON.stringify(state.entries));
-  }, SAVE_DEBOUNCE_MS);
+  mealService.saveAll(state.entries);
 }
 
 export function saveFavorites() {
-  clearTimeout(saveDebounceTimer);
-  saveDebounceTimer = setTimeout(() => {
-    localStorage.setItem('kcal_tracker_favorites', JSON.stringify(state.favorites));
-  }, SAVE_DEBOUNCE_MS);
+  favoriteService.saveAll(state.favorites);
 }
 
 export function saveTdeeGoal() {
-  localStorage.setItem('kcal_tracker_tdee_goal', state.tdeeGoal.toString());
+  goalService.setGoal(state.tdeeGoal);
 }
 
 export function saveTdeeSettings() {
-  localStorage.setItem('kcal_tracker_tdee_settings', JSON.stringify(state.tdeeSettings));
+  goalService.saveSettings(state.tdeeSettings);
 }
 
 export function saveAiSettings() {
-  localStorage.setItem('kcal_ai_model', state.modelName);
+  appStorage.set('kcal_ai_model', state.modelName);
 }
 
 export function loadLocalStorage(showToastCallback) {
   try {
-    const entries = localStorage.getItem('kcal_tracker_entries');
-    if (entries) state.entries = JSON.parse(entries);
+    // Theme
+    const savedTheme = appStorage.get('kcal_tracker_theme', null);
+    if (savedTheme) state.theme = savedTheme;
 
-    const favorites = localStorage.getItem('kcal_tracker_favorites');
-    if (favorites) {
-      state.favorites = JSON.parse(favorites);
-    } else {
-      // Seed initial favorites for better user experience
-      state.favorites = [
-        { id: 'fav-1', name: 'Greek Yogurt with Honey', calories: 220, mealType: 'breakfast' },
-        { id: 'fav-2', name: 'Grilled Chicken Salad', calories: 450, mealType: 'lunch' },
-        { id: 'fav-3', name: 'Baked Salmon & Broccoli', calories: 550, mealType: 'dinner' },
-        { id: 'fav-4', name: 'Whey Protein Shake', calories: 180, mealType: 'snack' },
-        { id: 'fav-5', name: 'Handful of Mixed Almonds', calories: 160, mealType: 'snack' }
-      ];
-      saveFavorites();
-    }
+    // AI Model
+    const savedModel = appStorage.get('kcal_ai_model', null);
+    if (savedModel) state.modelName = savedModel;
 
-    const tdeeGoal = localStorage.getItem('kcal_tracker_tdee_goal');
-    if (tdeeGoal) state.tdeeGoal = parseInt(tdeeGoal, 10);
-
-    const tdeeSettings = localStorage.getItem('kcal_tracker_tdee_settings');
-    if (tdeeSettings) state.tdeeSettings = JSON.parse(tdeeSettings);
-
-    const theme = localStorage.getItem('kcal_tracker_theme');
-    if (theme) state.theme = theme;
-
-    const modelName = localStorage.getItem('kcal_ai_model');
-    if (modelName) state.modelName = modelName;
+    // Trigger state loaded event
+    eventBus.emit(APP_EVENTS.STATE_LOADED, state);
   } catch (err) {
     console.error('Error loading localStorage:', err);
     if (showToastCallback) {
