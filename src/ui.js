@@ -208,7 +208,7 @@ export function renderDailyLog() {
         <!-- Left Side: Food Image Box -->
         <div class="meal-card-image-box">
           ${item.image 
-            ? `<img src="${item.image}" class="meal-card-image" alt="${escapeHtml(item.name)}">` 
+            ? `<img src="${item.image}" class="meal-card-image" alt="${escapeHtml(item.name)}" loading="lazy" decoding="async">` 
             : `<div class="meal-card-image-placeholder">🍲</div>`
           }
         </div>
@@ -523,13 +523,6 @@ export function prefillMealModalFromScan(result, imageBase64) {
     fat: result.fat,
     carbs: result.carb
   };
-
-  // Show macro preview
-  const macroPreview = document.getElementById('meal-macro-preview');
-  if (macroPreview) macroPreview.classList.remove('hidden');
-  document.getElementById('preview-protein').textContent = result.protein;
-  document.getElementById('preview-fat').textContent = result.fat;
-  document.getElementById('preview-carb').textContent = result.carb;
 
   openModal(mealModal);
 }

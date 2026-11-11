@@ -556,8 +556,6 @@ function openMealModalForCreate() {
   document.getElementById('meal-carb-input').value = '';
   document.getElementById('meal-ai-scanned').value = '';
   document.getElementById('meal-image-input').value = '';
-  const macroPreview = document.getElementById('meal-macro-preview');
-  if (macroPreview) macroPreview.classList.add('hidden');
 
   openModal(mealModal);
 }
@@ -578,8 +576,6 @@ function openMealModalForEdit(entry) {
   document.getElementById('meal-carb-input').value = entry.carb !== undefined && entry.carb !== null ? entry.carb : '';
   document.getElementById('meal-ai-scanned').value = entry.aiScanned ? '1' : '';
   document.getElementById('meal-image-input').value = entry.image || '';
-  const macroPreview = document.getElementById('meal-macro-preview');
-  if (macroPreview) macroPreview.classList.add('hidden');
 
   openModal(mealModal);
 }
@@ -663,10 +659,6 @@ function handleMealFormSubmit() {
     renderAll();
     showToast(`Logged "${name}" (${calories} kcal)`, 'success');
   }
-
-  // Clean up macro preview
-  const macroPreview = document.getElementById('meal-macro-preview');
-  if (macroPreview) macroPreview.classList.add('hidden');
 
   closeModal(mealModal);
 }

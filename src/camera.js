@@ -258,25 +258,10 @@ async function processImageFile(file) {
     }
   }
 
-  // 3) Standard JPEG/PNG upload processing via browser-image-compression
-  let targetFile = file;
+  // 3) Standard JPEG/PNG upload processing directly via canvas resize/re-encode
+  // Resizes and compresses image to ~800px max dimension and 0.80 JPEG quality
   try {
-    showToast('Optimizing image...', 'info');
-    const imageCompression = (await import('browser-image-compression')).default;
-    const options = {
-      maxSizeMB: 0.1,          // Target size ~100KB
-      maxWidthOrHeight: 800,   // Max dimension 800px
-      useWebWorker: true
-    };
-    targetFile = await imageCompression(targetFile, options);
-    console.log('[Compression] Compression successful. Compressed size:', targetFile.size);
-  } catch (compressErr) {
-    console.warn('[Compression] Compression failed, using original file:', compressErr);
-  }
-
-  // Draw targetFile directly to camera-canvas with alpha: false
-  try {
-    const bitmap = await createImageBitmap(targetFile);
+    const bitmap = await createImageBitmap(file);
     _capturedBase64 = resizeImageBitmap(bitmap, 800, 0.80);
     bitmap.close();
 
@@ -288,15 +273,10 @@ async function processImageFile(file) {
     showCameraStep('confirm');
   } catch (bitmapErr) {
     // Fallback to Image loader if createImageBitmap fails
-    const objectUrl = URL.createObjectURL(targetFile);
+    const objectUrl = URL.createObjectURL(file);
     const img = new Image();
     img.onload = function() {
-      const canvas = document.getElementById('camera-canvas');
-      if (!canvas) {
-        URL.revokeObjectURL(objectUrl);
-        return;
-      }
-
+      const canvas = document.getElementById('camera-canvas') || document.createElement('canvas');
       let w = img.width;
       let h = img.height;
       const ratio = Math.min(800 / w, 800 / h, 1);
