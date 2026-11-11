@@ -26,18 +26,24 @@ On load, `app.js` calls `loadLocalStorage()` to hydrate state from localStorage,
 
 | File | Role |
 |---|---|
-| `app.js` | Main controller — event listeners, CRUD dispatch, TDEE form handler, modal open/close logic |
-| `src/state.js` | Mutable state object + localStorage persistence helpers |
+| `app.js` | Application Controller (GRASP) — UI event listeners and orchestration |
+| `src/core/events.js` | EventBus (Observer pattern / Indirection) for loose coupling between Domain and UI |
+| `src/core/storage.js` | StorageService (Pure Fabrication / DIP) — abstract storage layer with debounced writes |
+| `src/domain/MealService.js` | MealService (Information Expert / Creator) — meal entity creation, CRUD, and daily summaries |
+| `src/domain/FavoriteService.js` | FavoriteService (Information Expert) — favorites CRUD and duplicate detection |
+| `src/domain/GoalService.js` | GoalService (Information Expert) — TDEE settings, calculations, and goal persistence |
+| `src/state.js` | Reactive state facade with getters/setters delegating to domain services |
 | `src/ui.js` | DOM rendering (daily log, favorites list, progress ring, analytics stats), toast modals, HTML escaping for XSS prevention |
-| `src/ai.js` | Food analysis via Gemini API proxy — sends base64 image, parses JSON from LLM response with multi-strategy fallback (markdown fences, brace extraction, truncated JSON repair, regex fallback, LLM repair call) |
-| `src/camera.js` | Camera/gallery capture — starts video stream, captures frames, handles HEIC conversion (native `createImageBitmap` → `heic2any` fallback), compresses with `browser-image-compression`, manages camera modal steps (preview → confirm → loading) |
-| `src/chart.js` | ApexCharts wrapper — renders area chart with gradient fill, goal annotation line, cached config to skip redundant re-renders |
-| `src/calculator.js` | Mifflin-St Jeor BMR/TDEE calculation |
-| `src/backup.js` | JSON export/import of all user data |
+| `src/ai.js` | Food analysis via Gemini API proxy — sends base64 image, parses JSON from LLM response |
+| `src/camera.js` | Camera/gallery capture — stream management, image conversion/compression, modal steps |
+| `src/chart.js` | ApexCharts wrapper — renders area chart with gradient fill and goal annotation |
+| `src/calculator.js` | Mifflin-St Jeor BMR/TDEE calculation formula |
+| `src/backup.js` | BackupService (Pure Fabrication) — JSON export/import of user data and telemetry |
+| `src/telemetry.js` | TelemetryService (SRP) — scan metrics tracking comparing AI predictions with user edits |
 
 ### API proxy
 
-The Vite dev server runs a custom plugin (`vite-plugin-ai-proxy.js`) that proxies `/api/analyze` POST requests to `https://gen.ai.kku.ac.th/api/v1/chat/completions`. The AI API key is read from `.env` (`AI_API_KEY`) — see `.env.example`. On Vercel, `vercel.json` rewrites `/api/*` to serverless functions (if deployed) and everything else to `index.html` for SPA routing.
+The Vite dev server runs a custom plugin (`vite-plugin-ai-proxy.js`) that proxies `/api/analyze` and `/api/models` to `https://generativelanguage.googleapis.com/v1beta/openai/`. The AI API key is read from `.env` (`AI_API_KEY`) — see `.env.example`. On Cloudflare Pages, `public/_redirects` rewrites `/api/*` to the Cloudflare Worker (`r2-worker`) and all other routes to `/index.html` for SPA routing.
 
 ### Views
 

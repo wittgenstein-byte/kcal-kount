@@ -1,6 +1,6 @@
 import { state, saveAiSettings } from './state.js';
 import { showToast, openModal, closeModal, prefillMealModalFromScan } from './ui.js';
-import { analyzeFood } from './ai.js';
+import { analyzeFood, getAvailableModels } from './ai.js';
 
 let _capturedBase64 = null;
 let _stream = null;
@@ -103,7 +103,9 @@ function captureVideoFrame() {
   canvas.width = targetSize;
   canvas.height = targetSize;
 
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d', { alpha: false });
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(video, sx, sy, size, size, 0, 0, targetSize, targetSize);
   _capturedBase64 = canvas.toDataURL('image/jpeg', 0.80);
 
@@ -177,7 +179,26 @@ function showCameraStep(step) {
 }
 
 /**
- * Process a captured/uploaded image file: compress to 800x600 JPEG,
+ * Resize ImageBitmap directly to target dimensions with high quality and no alpha overhead.
+ */
+function resizeImageBitmap(bitmap, maxDim = 800, quality = 0.80) {
+  const canvas = document.getElementById('camera-canvas') || document.createElement('canvas');
+  let w = bitmap.width;
+  let h = bitmap.height;
+  const ratio = Math.min(maxDim / w, maxDim / h, 1);
+  canvas.width = Math.round(w * ratio);
+  canvas.height = Math.round(h * ratio);
+
+  const ctx = canvas.getContext('2d', { alpha: false });
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+
+  return canvas.toDataURL('image/jpeg', quality);
+}
+
+/**
+ * Process a captured/uploaded image file: compress to 800px JPEG,
  * store as base64, and show the confirm step.
  */
 async function processImageFile(file) {
@@ -192,41 +213,22 @@ async function processImageFile(file) {
 
   const isHeic = file.name?.toLowerCase().endsWith('.heic') || file.name?.toLowerCase().endsWith('.heif') || file.type === 'image/heic' || file.type === 'image/heif';
   
-  let targetFile = file;
-  let alreadyResized = false;
-
   if (isHeic) {
     showToast('Processing HEIC image...', 'info');
     try {
-      // 2) Try native decode first (supported in modern iOS and Android) - no library load, very low RAM usage
+      // 2) Native decode first (modern iOS and Android) - directly resize to camera-canvas without intermediary files
       const bitmap = await createImageBitmap(file);
-      
-      const tempCanvas = document.createElement('canvas');
-      const MAX_W = 600;
-      const MAX_H = 450;
-      let w = bitmap.width;
-      let h = bitmap.height;
-      const ratio = Math.min(MAX_W / w, MAX_H / h, 1);
-      tempCanvas.width = Math.round(w * ratio);
-      tempCanvas.height = Math.round(h * ratio);
-      
-      const ctx = tempCanvas.getContext('2d');
-      ctx.drawImage(bitmap, 0, 0, tempCanvas.width, tempCanvas.height);
-      
-      // Close bitmap immediately to release memory
+      _capturedBase64 = resizeImageBitmap(bitmap, 800, 0.80);
       bitmap.close();
-      
-      const blob = await new Promise(resolve => tempCanvas.toBlob(resolve, 'image/jpeg', 0.75));
-      
-      // Reset temp canvas size
-      tempCanvas.width = 1;
-      tempCanvas.height = 1;
-      
-      targetFile = new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
-        type: 'image/jpeg'
-      });
-      alreadyResized = true;
-      console.log('[HEIC] Native decode successful');
+
+      const modal = document.getElementById('camera-modal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.setAttribute('aria-hidden', 'false');
+      }
+      showCameraStep('confirm');
+      console.log('[HEIC] Native decode and resize successful');
+      return;
     } catch (nativeErr) {
       console.warn('[HEIC] Native decode failed, trying heic2any fallback:', nativeErr);
       try {
@@ -234,12 +236,20 @@ async function processImageFile(file) {
         const convertedBlob = await heic2any({
           blob: file,
           toType: 'image/jpeg',
-          quality: 0.75
+          quality: 0.80
         });
         const resultBlob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
-        targetFile = new File([resultBlob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
-          type: 'image/jpeg'
-        });
+        const bitmap = await createImageBitmap(resultBlob);
+        _capturedBase64 = resizeImageBitmap(bitmap, 800, 0.80);
+        bitmap.close();
+
+        const modal = document.getElementById('camera-modal');
+        if (modal) {
+          modal.classList.remove('hidden');
+          modal.setAttribute('aria-hidden', 'false');
+        }
+        showCameraStep('confirm');
+        return;
       } catch (err) {
         console.error('[HEIC] Fallback conversion failed:', err);
         showToast('HEIC conversion failed. In Camera settings, please change format to JPEG.', 'warning');
@@ -248,71 +258,76 @@ async function processImageFile(file) {
     }
   }
 
-  // 3) Compress image if it hasn't been resized yet
-  if (!alreadyResized) {
-    try {
-      showToast('Optimizing image...', 'info');
-      const imageCompression = (await import('browser-image-compression')).default;
-      const options = {
-        maxSizeMB: 0.1,          // Target size ~100KB
-        maxWidthOrHeight: 800,   // Max dimension 800px
-        useWebWorker: true
-      };
-      targetFile = await imageCompression(targetFile, options);
-      console.log('[Compression] Compression successful. Compressed size:', targetFile.size);
-    } catch (compressErr) {
-      console.warn('[Compression] Compression failed, using original/converted file:', compressErr);
-    }
+  // 3) Standard JPEG/PNG upload processing via browser-image-compression
+  let targetFile = file;
+  try {
+    showToast('Optimizing image...', 'info');
+    const imageCompression = (await import('browser-image-compression')).default;
+    const options = {
+      maxSizeMB: 0.1,          // Target size ~100KB
+      maxWidthOrHeight: 800,   // Max dimension 800px
+      useWebWorker: true
+    };
+    targetFile = await imageCompression(targetFile, options);
+    console.log('[Compression] Compression successful. Compressed size:', targetFile.size);
+  } catch (compressErr) {
+    console.warn('[Compression] Compression failed, using original file:', compressErr);
   }
 
-  const objectUrl = URL.createObjectURL(targetFile);
-  const img = new Image();
-  img.onload = function() {
-    const canvas = document.getElementById('camera-canvas');
-    if (!canvas) {
-      URL.revokeObjectURL(objectUrl);
-      return;
-    }
+  // Draw targetFile directly to camera-canvas with alpha: false
+  try {
+    const bitmap = await createImageBitmap(targetFile);
+    _capturedBase64 = resizeImageBitmap(bitmap, 800, 0.80);
+    bitmap.close();
 
-    let w = img.width;
-    let h = img.height;
-    const size = Math.min(w, h);
-    const sx = (w - size) / 2;
-    const sy = (h - size) / 2;
-
-    const targetSize = Math.min(size, 1024);
-    canvas.width = targetSize;
-    canvas.height = targetSize;
-
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, sx, sy, size, size, 0, 0, targetSize, targetSize);
-
-    URL.revokeObjectURL(objectUrl);
-
-    // Release image reference so GC can reclaim it
-    img.src = '';
-    img.onload = null;
-    img.onerror = null;
-
-    _capturedBase64 = canvas.toDataURL('image/jpeg', 0.80);
-
-    // Show the modal (in case it was hidden) and go to confirm step
     const modal = document.getElementById('camera-modal');
     if (modal) {
       modal.classList.remove('hidden');
       modal.setAttribute('aria-hidden', 'false');
     }
     showCameraStep('confirm');
-  };
-  img.onerror = function() {
-    URL.revokeObjectURL(objectUrl);
-    img.src = '';
-    img.onload = null;
-    img.onerror = null;
-    showToast('Could not load image. Please try another photo.', 'warning');
-    showCameraStep('preview');
-  };
-  img.src = objectUrl;
+  } catch (bitmapErr) {
+    // Fallback to Image loader if createImageBitmap fails
+    const objectUrl = URL.createObjectURL(targetFile);
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.getElementById('camera-canvas');
+      if (!canvas) {
+        URL.revokeObjectURL(objectUrl);
+        return;
+      }
+
+      let w = img.width;
+      let h = img.height;
+      const ratio = Math.min(800 / w, 800 / h, 1);
+      canvas.width = Math.round(w * ratio);
+      canvas.height = Math.round(h * ratio);
+
+      const ctx = canvas.getContext('2d', { alpha: false });
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      URL.revokeObjectURL(objectUrl);
+      img.src = '';
+
+      _capturedBase64 = canvas.toDataURL('image/jpeg', 0.80);
+
+      const modal = document.getElementById('camera-modal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.setAttribute('aria-hidden', 'false');
+      }
+      showCameraStep('confirm');
+    };
+    img.onerror = function() {
+      URL.revokeObjectURL(objectUrl);
+      img.src = '';
+      showToast('Could not load image. Please try another photo.', 'warning');
+      showCameraStep('preview');
+    };
+    img.src = objectUrl;
+  }
 }
 
 function retakePhoto() {
@@ -371,9 +386,21 @@ async function confirmAndScan() {
   }
 }
 
-export function loadAiSettingsIntoForm() {
+export async function loadAiSettingsIntoForm() {
   const modelInput = document.getElementById('settings-model-name');
-  if (modelInput) modelInput.value = state.modelName || 'gemini-3.5-flash';
+  if (modelInput) modelInput.value = state.modelName || 'gemini-3.8-flash';
+
+  const datalist = document.getElementById('available-models-list');
+  if (datalist) {
+    try {
+      const models = await getAvailableModels();
+      if (models && models.length > 0) {
+        datalist.innerHTML = models.map(m => `<option value="${m}"></option>`).join('');
+      }
+    } catch (e) {
+      console.warn('Could not populate available models datalist:', e);
+    }
+  }
 }
 
 export function setupCameraListeners() {
@@ -438,7 +465,7 @@ export function setupCameraListeners() {
   if (saveAiBtn) {
     saveAiBtn.addEventListener('click', () => {
       const modelVal = document.getElementById('settings-model-name').value.trim();
-      state.modelName = modelVal || 'gemini-3.5-flash';
+      state.modelName = modelVal || 'gemini-3.8-flash';
       saveAiSettings();
       showToast('AI model saved!', 'success');
     });

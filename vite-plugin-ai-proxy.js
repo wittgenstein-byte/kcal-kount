@@ -1,7 +1,9 @@
 import { loadEnv } from 'vite';
 
-const UPSTREAM_URL = 'https://gen.ai.kku.ac.th/api/v1/chat/completions';
-const ROUTE = '/api/analyze';
+const UPSTREAM_CHAT_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
+const UPSTREAM_MODELS_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/models';
+const ROUTE_ANALYZE = '/api/analyze';
+const ROUTE_MODELS = '/api/models';
 const UPSTREAM_TIMEOUT_MS = 25000;
 
 function readBody(req) {
@@ -42,7 +44,7 @@ async function handleAnalyze(req, res, apiKey) {
   const timer = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS);
 
   try {
-    const upstream = await fetch(UPSTREAM_URL, {
+    const upstream = await fetch(UPSTREAM_CHAT_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -67,6 +69,39 @@ async function handleAnalyze(req, res, apiKey) {
   }
 }
 
+async function handleModels(req, res, apiKey) {
+  if (req.method !== 'GET') {
+    jsonResponse(res, 405, { error: 'Method not allowed' });
+    return;
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+
+  try {
+    const upstream = await fetch(UPSTREAM_MODELS_URL, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`
+      },
+      signal: controller.signal
+    });
+
+    const responseBody = await upstream.text();
+    res.statusCode = upstream.status;
+    res.setHeader('Content-Type', upstream.headers.get('content-type') || 'application/json; charset=utf-8');
+    res.end(responseBody);
+  } catch (e) {
+    if (e.name === 'AbortError') {
+      jsonResponse(res, 504, { error: 'Upstream models request timed out' });
+    } else {
+      jsonResponse(res, 502, { error: `Upstream models request failed: ${e.message}` });
+    }
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function resolveApiKey(server) {
   const env = loadEnv(server.config.env.mode || 'development', server.config.env.root || process.cwd(), '');
   return env.AI_API_KEY || process.env.AI_API_KEY || '';
@@ -74,13 +109,17 @@ function resolveApiKey(server) {
 
 function makeMiddleware(server) {
   return async (req, res, next) => {
-    if (!req.url || !req.url.startsWith(ROUTE)) {
+    const url = req.url ? req.url.split('?')[0] : '';
+    const isAnalyze = url === ROUTE_ANALYZE || url.startsWith(ROUTE_ANALYZE);
+    const isModels = url === ROUTE_MODELS || url.startsWith(ROUTE_MODELS);
+
+    if (!isAnalyze && !isModels) {
       return next();
     }
 
     const apiKey = resolveApiKey(server);
     if (!apiKey) {
-      console.error(`[ai-proxy] ${ROUTE} called but AI_API_KEY is not set in the server environment (.env).`);
+      console.error(`[ai-proxy] ${url} called but AI_API_KEY is not set in the server environment (.env).`);
       jsonResponse(res, 500, {
         error: 'AI_API_KEY is not configured on the server. Add it to your .env file.'
       });
@@ -88,7 +127,11 @@ function makeMiddleware(server) {
     }
 
     try {
-      await handleAnalyze(req, res, apiKey);
+      if (isAnalyze) {
+        await handleAnalyze(req, res, apiKey);
+      } else if (isModels) {
+        await handleModels(req, res, apiKey);
+      }
     } catch (e) {
       console.error('[ai-proxy] Unhandled error:', e);
       if (!res.headersSent) {

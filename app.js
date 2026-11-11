@@ -1,14 +1,12 @@
 import { 
   state, 
   loadLocalStorage, 
-  saveEntries, 
-  saveFavorites, 
-  saveTdeeGoal, 
-  saveTdeeSettings, 
-  saveAiSettings,
   getLocalDateString 
 } from './src/state.js';
 
+import { mealService } from './src/domain/MealService.js';
+import { favoriteService } from './src/domain/FavoriteService.js';
+import { goalService } from './src/domain/GoalService.js';
 import { 
   logScanTelemetry,
   clearTelemetryLog,
@@ -18,14 +16,12 @@ import {
   removeTelemetryOnDelete
 } from './src/telemetry.js';
 
-import { calculateTdee } from './src/calculator.js';
 import { exportBackup, importBackup } from './src/backup.js';
 import { 
   setupCameraListeners, 
   closeCameraModal, 
   loadAiSettingsIntoForm 
 } from './src/camera.js';
-
 
 import { 
   showToast, 
@@ -39,17 +35,48 @@ import {
   renderAnalyticsView 
 } from './src/ui.js';
 
+import { eventBus, APP_EVENTS } from './src/core/events.js';
+
+/**
+ * Application Controller (GRASP Controller Pattern)
+ * Coordinates user interface events with domain services and view updates.
+ */
+
 // INITIALIZATION
 document.addEventListener('DOMContentLoaded', () => {
   loadLocalStorage(showToast);
   initTheme();
   setupEventListeners();
+  setupEventBusSubscriptions();
   updateDateDisplay();
   renderAll();
 });
 
 function initTheme() {
   document.documentElement.setAttribute('data-theme', state.theme);
+}
+
+function setupEventBusSubscriptions() {
+  // Loose coupling: when domain models change, update UI
+  eventBus.on(APP_EVENTS.MEALS_CHANGED, () => {
+    renderDailyLog();
+    updateSummaryMetrics();
+    if (state.activeView === 'analytics') {
+      renderAnalyticsView();
+    }
+  });
+
+  eventBus.on(APP_EVENTS.FAVORITES_CHANGED, () => {
+    renderFavorites();
+  });
+
+  eventBus.on(APP_EVENTS.GOAL_CHANGED, () => {
+    renderTdeeInputs();
+    updateSummaryMetrics();
+    if (state.activeView === 'analytics') {
+      renderAnalyticsView();
+    }
+  });
 }
 
 function renderActiveView() {
@@ -100,7 +127,7 @@ function shiftDate(days) {
   showToast(`View switched to ${formatDateFriendly(state.currentDate)}`, 'info');
 }
 
-// EVENT LISTENERS
+// EVENT LISTENERS WIRING
 function setupEventListeners() {
   // Theme Toggle
   const themeToggleBtn = document.getElementById('theme-toggle');
@@ -155,8 +182,9 @@ function setupEventListeners() {
       toggleCalcBtn.classList.remove('active');
       manualFormWrapper.classList.remove('hidden');
       calcFormWrapper.classList.add('hidden');
-      state.tdeeSettings.calculationType = 'manual';
-      saveTdeeSettings();
+      const settings = goalService.getSettings();
+      settings.calculationType = 'manual';
+      goalService.saveSettings(settings);
     });
 
     toggleCalcBtn.addEventListener('click', () => {
@@ -164,8 +192,9 @@ function setupEventListeners() {
       toggleManualBtn.classList.remove('active');
       calcFormWrapper.classList.remove('hidden');
       manualFormWrapper.classList.add('hidden');
-      state.tdeeSettings.calculationType = 'calculated';
-      saveTdeeSettings();
+      const settings = goalService.getSettings();
+      settings.calculationType = 'calculated';
+      goalService.saveSettings(settings);
       renderTdeeInputs();
     });
   }
@@ -176,13 +205,13 @@ function setupEventListeners() {
     manualGoalForm.addEventListener('submit', (e) => {
       e.preventDefault();
       const val = parseInt(document.getElementById('manual-goal-input').value, 10);
-      if (val && val >= 500) {
-        state.tdeeGoal = val;
-        saveTdeeGoal();
+      if (goalService.setGoal(val)) {
         renderAll();
         showToast(`Goal updated to ${val} kcal!`, 'success');
         const settingsModal = document.getElementById('settings-modal');
         if (settingsModal) closeModal(settingsModal);
+      } else {
+        showToast('Please enter a goal of at least 500 kcal.', 'warning');
       }
     });
   }
@@ -313,24 +342,12 @@ function setupEventListeners() {
           return;
         }
 
-        const now = new Date();
-        const timeString = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-
-        const newEntry = {
-          id: 'meal-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+        mealService.createEntry({
           name,
           calories,
-          mealType: '',
-          date: state.currentDate,
-          time: timeString,
-          aiScanned: false,
-          protein: null,
-          fat: null,
-          carb: null
-        };
+          date: state.currentDate
+        });
 
-        state.entries.push(newEntry);
-        saveEntries();
         renderAll();
         showToast(`Logged "${name}" (${calories} kcal)`, 'success');
         quickLogInput.value = '';
@@ -363,8 +380,6 @@ function setupEventListeners() {
       renderActiveView();
     });
   }
-
-
 
   // Analytics Range Toggle Buttons
   const range7dBtn = document.getElementById('range-7d-btn');
@@ -451,7 +466,7 @@ function setupEventListeners() {
         handleFavoriteToggle(id);
       } else if (btnEdit) {
         const id = btnEdit.getAttribute('data-id');
-        const entry = state.entries.find(item => item.id === id);
+        const entry = mealService.getAll().find(item => item.id === id);
         if (entry) openMealModalForEdit(entry);
       } else if (btnDelete) {
         const id = btnDelete.getAttribute('data-id');
@@ -469,7 +484,7 @@ function setupEventListeners() {
       
       if (btnAdd) {
         const id = btnAdd.getAttribute('data-id');
-        const favorite = state.favorites.find(item => item.id === id);
+        const favorite = favoriteService.getAll().find(item => item.id === id);
         if (favorite) logFavoriteMeal(favorite);
       } else if (btnDel) {
         const id = btnDel.getAttribute('data-id');
@@ -491,26 +506,14 @@ function calculateTdeeFromForm() {
   const objective = parseFloat(document.getElementById('calc-objective').value);
   const isMale = document.getElementById('gender-male').checked;
 
-  const calculatedTdee = calculateTdee(age, weight, height, activityLevel, objective, isMale);
+  const calculatedTdee = goalService.calculateAndApply({
+    age, weight, height, activityLevel, objective, isMale
+  });
   
   if (calculatedTdee === null) {
     showToast('Please fill out all numeric TDEE values.', 'warning');
     return;
   }
-
-  state.tdeeGoal = calculatedTdee;
-  saveTdeeGoal();
-
-  state.tdeeSettings = {
-    calculationType: 'calculated',
-    gender: isMale ? 'male' : 'female',
-    weight,
-    height,
-    age,
-    activityLevel: activityLevel.toString(),
-    objective: objective.toString()
-  };
-  saveTdeeSettings();
 
   renderAll();
   showToast(`Calculated TDEE: ${calculatedTdee} kcal goal applied!`, 'success');
@@ -607,53 +610,43 @@ function handleMealFormSubmit() {
 
   if (id) {
     // Update Mode
-    const index = state.entries.findIndex(e => e.id === id);
-    if (index !== -1) {
-      const wasAiScanned = state.entries[index].aiScanned;
-      state.entries[index].name = name;
-      state.entries[index].calories = calories;
-      state.entries[index].date = date;
-      state.entries[index].protein = protein;
-      state.entries[index].fat = fat;
-      state.entries[index].carb = carb;
-      state.entries[index].aiScanned = aiScanned;
-      state.entries[index].image = image;
+    const existing = mealService.getAll().find(e => e.id === id);
+    const wasAiScanned = existing ? existing.aiScanned : false;
 
-      // Update telemetry log if this meal was AI scanned
-      if (wasAiScanned || aiScanned) {
-        updateTelemetryOnEdit(id, {
-          calories: calories,
-          protein: protein,
-          fat: fat,
-          carbs: carb
-        });
-      }
-
-      saveEntries();
-      renderAll();
-      showToast(`Updated entry: "${name}"`, 'success');
-    }
-  } else {
-    // Create Mode
-    const now = new Date();
-    const timeString = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-
-    const newEntry = {
-      id: 'meal-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+    mealService.updateEntry(id, {
       name,
       calories,
-      mealType: '',
       date,
-      time: timeString,
-      // AI scan fields
-      aiScanned: aiScanned || false,
-      protein: protein,
-      fat: fat,
-      carb: carb,
-      image: image
-    };
+      protein,
+      fat,
+      carb,
+      aiScanned,
+      image
+    });
 
-    state.entries.push(newEntry);
+    if (wasAiScanned || aiScanned) {
+      updateTelemetryOnEdit(id, {
+        calories,
+        protein,
+        fat,
+        carbs: carb
+      });
+    }
+
+    renderAll();
+    showToast(`Updated entry: "${name}"`, 'success');
+  } else {
+    // Create Mode
+    const newEntry = mealService.createEntry({
+      name,
+      calories,
+      date,
+      protein,
+      fat,
+      carb,
+      aiScanned,
+      image
+    });
 
     // Log AI Scan Telemetry if applicable
     if (aiScanned && state.lastAiGuess) {
@@ -667,7 +660,6 @@ function handleMealFormSubmit() {
       state.lastAiGuess = null;
     }
 
-    saveEntries();
     renderAll();
     showToast(`Logged "${name}" (${calories} kcal)`, 'success');
   }
@@ -680,20 +672,16 @@ function handleMealFormSubmit() {
 }
 
 function deleteMealEntry(id) {
-  const index = state.entries.findIndex(e => e.id === id);
-  if (index !== -1) {
-    const name = state.entries[index].name;
-    const wasAiScanned = state.entries[index].aiScanned;
-    state.entries.splice(index, 1);
+  const existing = mealService.getAll().find(e => e.id === id);
+  if (!existing) return;
 
-    // Remove from telemetry log if applicable
-    if (wasAiScanned) {
+  const deleted = mealService.deleteEntry(id);
+  if (deleted) {
+    if (deleted.aiScanned) {
       removeTelemetryOnDelete(id);
     }
-
-    saveEntries();
     renderAll();
-    showToast(`Deleted "${name}"`, 'success');
+    showToast(`Deleted "${deleted.name}"`, 'success');
   }
 }
 
@@ -717,90 +705,48 @@ function handleFavFormSubmit() {
     return;
   }
 
-  const isDuplicate = state.favorites.some(fav => 
-    fav.name.toLowerCase() === name.toLowerCase() && 
-    parseInt(fav.calories, 10) === calories
-  );
-
-  if (isDuplicate) {
+  const result = favoriteService.addFavorite(name, calories);
+  if (!result.success && result.reason === 'duplicate') {
     showToast('This item is already in your favorites.', 'info');
     closeModal(document.getElementById('fav-modal'));
     return;
   }
 
-  const newFav = {
-    id: 'fav-' + Date.now(),
-    name,
-    calories,
-    mealType: ''
-  };
-
-  state.favorites.push(newFav);
-  saveFavorites();
   closeModal(document.getElementById('fav-modal'));
   renderAll();
   showToast(`Added "${name}" to Favorites!`, 'success');
 }
 
 function deleteFavoriteItem(id) {
-  const index = state.favorites.findIndex(item => item.id === id);
-  if (index !== -1) {
-    const name = state.favorites[index].name;
-    state.favorites.splice(index, 1);
-    saveFavorites();
+  const deleted = favoriteService.removeFavorite(id);
+  if (deleted) {
     renderAll();
-    showToast(`Removed "${name}" from Favorites`, 'success');
+    showToast(`Removed "${deleted.name}" from Favorites`, 'success');
   }
 }
 
 function logFavoriteMeal(fav) {
-  const now = new Date();
-  const timeString = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-
-  const newEntry = {
-    id: 'meal-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+  mealService.createEntry({
     name: fav.name,
     calories: fav.calories,
-    mealType: '',
-    date: state.currentDate,
-    time: timeString
-  };
+    date: state.currentDate
+  });
 
-  state.entries.push(newEntry);
-  saveEntries();
   renderAll();
   showToast(`Logged "${fav.name}" (${fav.calories} kcal)`, 'success');
 }
 
 // Toggle Favorite Status from Daily Log Item Click
 function handleFavoriteToggle(id) {
-  const entry = state.entries.find(e => e.id === id);
+  const entry = mealService.getAll().find(e => e.id === id);
   if (!entry) return;
 
-  const existingFavIndex = state.favorites.findIndex(f => 
-    f.name.toLowerCase() === entry.name.toLowerCase() && 
-    parseInt(f.calories, 10) === parseInt(entry.calories, 10)
-  );
-
-  if (existingFavIndex !== -1) {
-    // Remove from favorites
-    const name = state.favorites[existingFavIndex].name;
-    state.favorites.splice(existingFavIndex, 1);
-    saveFavorites();
-    renderAll();
-    showToast(`Removed "${name}" from Favorites`, 'success');
-  } else {
-    // Add to favorites
-    const newFav = {
-      id: 'fav-' + Date.now(),
-      name: entry.name,
-      calories: parseInt(entry.calories, 10),
-      mealType: ''
-    };
-    state.favorites.push(newFav);
-    saveFavorites();
-    renderAll();
+  const result = favoriteService.toggleFavoriteFromMeal(entry);
+  renderAll();
+  if (result.added) {
     showToast(`Added "${entry.name}" to Favorites!`, 'success');
+  } else {
+    showToast(`Removed "${entry.name}" from Favorites`, 'success');
   }
 }
 

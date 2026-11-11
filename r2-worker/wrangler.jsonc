@@ -4,7 +4,7 @@
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "r2-worker",
+	"name": "kcal-kount",
 	"main": "src/index.ts",
 	"compatibility_date": "2026-07-15",
 	"observability": {
@@ -19,7 +19,12 @@
 			"binding": "BUCKET",
 			"bucket_name": "kcalkount"
 		}
-	]
+	],
+	"assets": {
+		"directory": "../dist",
+		"binding": "ASSETS",
+		"not_found_handling": "single-page-application"
+	}
 	/**
 	 * Smart Placement
 	 * https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
