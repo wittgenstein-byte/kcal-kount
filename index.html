@@ -507,8 +507,9 @@
           <div class="settings-ai-section">
             <div class="form-group">
               <label for="settings-model-name">AI Model Name</label>
-              <input type="text" id="settings-model-name" placeholder="e.g. gemini-3.5-flash">
-              <p class="input-help">The model used for AI food recognition analysis.</p>
+              <input type="text" id="settings-model-name" list="available-models-list" placeholder="e.g. gemini-3.8-flash" autocomplete="off">
+              <datalist id="available-models-list"></datalist>
+              <p class="input-help">The model used for AI food recognition analysis. Choose from active models or type a custom one.</p>
             </div>
             <div style="margin-top:0.75rem; margin-bottom: 1.5rem;">
               <button type="button" id="save-ai-settings-btn" class="text-btn primary-btn">Save AI Settings</button>

@@ -37,7 +37,7 @@ On load, `app.js` calls `loadLocalStorage()` to hydrate state from localStorage,
 
 ### API proxy
 
-The Vite dev server runs a custom plugin (`vite-plugin-ai-proxy.js`) that proxies `/api/analyze` POST requests to `https://gen.ai.kku.ac.th/api/v1/chat/completions`. The AI API key is read from `.env` (`AI_API_KEY`) — see `.env.example`. On Vercel, `vercel.json` rewrites `/api/*` to serverless functions (if deployed) and everything else to `index.html` for SPA routing.
+The Vite dev server runs a custom plugin (`vite-plugin-ai-proxy.js`) that proxies `/api/analyze` and `/api/models` to `https://generativelanguage.googleapis.com/v1beta/openai/`. The AI API key is read from `.env` (`AI_API_KEY`) — see `.env.example`. On Cloudflare Pages, `public/_redirects` rewrites `/api/*` to the Cloudflare Worker (`r2-worker`) and all other routes to `/index.html` for SPA routing.
 
 ### Views
 
