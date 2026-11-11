@@ -771,7 +771,56 @@ input:focus, select:focus { border-color: var(--input-focus); }
 .chart-card { padding: 1.5rem; }
 .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
 .range-toggle-group { display: flex; background-color: var(--bg-tertiary); padding: 0.25rem; border-radius: 8px; border: 1px solid var(--border-muted); }
-.chart-wrapper { min-height: 320px; width: 100%; overflow: hidden; }
+/* NATIVE SVG CHART & TOOLTIP */
+.chart-wrapper {
+  position: relative;
+  min-height: 320px;
+  width: 100%;
+}
+.native-chart-svg {
+  user-select: none;
+}
+.native-chart-bar {
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.native-chart-bar:hover {
+  opacity: 0.85;
+}
+.native-chart-tooltip {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--shadow-lg);
+  border-radius: 8px;
+  padding: 0.4rem 0.75rem;
+  font-family: inherit;
+  transition: opacity 0.15s ease;
+}
+.chart-tip-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  white-space: nowrap;
+}
+.chart-tip-date {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.chart-tip-val {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.chart-empty-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 280px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-style: italic;
+}
 .analytics-metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1.25rem; }
 .metric-card { display: flex; flex-direction: column; gap: 0.25rem; }
 .metric-card .metric-label { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
