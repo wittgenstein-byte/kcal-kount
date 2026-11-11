@@ -3,6 +3,7 @@
 // Runtime types generated with workerd@1.20260710.1 2026-07-15 nodejs_compat
 interface __BaseEnv_Env {
 	BUCKET: R2Bucket;
+	AI_API_KEY?: string;
 }
 declare namespace Cloudflare {
 	interface GlobalProps {

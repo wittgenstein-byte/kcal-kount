@@ -86,5 +86,90 @@ app.get("/api/images/:filename", async (c) => {
 	});
 });
 
+// AI Analyze Proxy Endpoint (calls Google AI Studio OpenAI-compatible endpoint)
+app.post("/api/analyze", async (c) => {
+	console.log("[/api/analyze] Incoming request");
+	const apiKey = c.env.AI_API_KEY;
+	if (!apiKey) {
+		console.error("[/api/analyze] Missing AI_API_KEY");
+		return c.json({ error: "AI_API_KEY is not configured on Cloudflare Worker secret." }, 500);
+	}
+
+	try {
+		const rawBody = await c.req.text();
+		console.log("[/api/analyze] Body length:", rawBody?.length);
+		if (!rawBody) {
+			return c.json({ error: "Empty request body" }, 400);
+		}
+
+		console.log("[/api/analyze] Forwarding to Google AI Studio...");
+		const controller = new AbortController();
+		const timeoutId = setTimeout(() => controller.abort(), 50000);
+
+		const upstream = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				"Authorization": `Bearer ${apiKey}`,
+			},
+			body: rawBody,
+			signal: controller.signal,
+		});
+		clearTimeout(timeoutId);
+
+		console.log("[/api/analyze] Upstream response status:", upstream.status);
+		const responseText = await upstream.text();
+		return new Response(responseText, {
+			status: upstream.status,
+			headers: {
+				"Content-Type": upstream.headers.get("content-type") || "application/json; charset=utf-8",
+			},
+		});
+	} catch (err: any) {
+		console.error("[/api/analyze] Error:", err.name, err.message);
+		return c.json({ error: `Upstream AI request failed: ${err.message}` }, 502);
+	}
+});
+
+// AI Models Proxy Endpoint
+app.get("/api/models", async (c) => {
+	const apiKey = c.env.AI_API_KEY;
+	if (!apiKey) {
+		return c.json({ error: "AI_API_KEY is not configured on Cloudflare Worker secret." }, 500);
+	}
+
+	try {
+		const upstream = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/models", {
+			method: "GET",
+			headers: {
+				"Authorization": `Bearer ${apiKey}`,
+			},
+		});
+
+		const responseText = await upstream.text();
+		return new Response(responseText, {
+			status: upstream.status,
+			headers: {
+				"Content-Type": upstream.headers.get("content-type") || "application/json; charset=utf-8",
+			},
+		});
+	} catch (err: any) {
+		return c.json({ error: `Upstream models request failed: ${err.message}` }, 502);
+	}
+});
+
+// Fallback all non-API routes to static assets (SPA router support)
+app.all("*", async (c) => {
+	if (c.env.ASSETS) {
+		const res = await c.env.ASSETS.fetch(c.req.raw);
+		if (res.status === 404 && !c.req.path.startsWith("/api/")) {
+			const indexUrl = new URL("/", c.req.url);
+			return c.env.ASSETS.fetch(new Request(indexUrl, c.req.raw));
+		}
+		return res;
+	}
+	return c.text("Not found", 404);
+});
+
 // Export the Hono app
 export default app;
