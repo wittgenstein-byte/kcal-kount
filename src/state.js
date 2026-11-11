@@ -23,7 +23,7 @@ export let state = {
   theme: 'dark',
   activeView: 'dashboard',
   analyticsRange: 7,
-  modelName: 'gemini-3.5-flash',
+  modelName: 'gemini-3.1-flash-lite',
   lastAiGuess: null
 };
 

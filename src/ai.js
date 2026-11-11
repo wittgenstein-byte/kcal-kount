@@ -1,9 +1,91 @@
-import { state } from './state.js';
+import { state, saveAiSettings } from './state.js';
+import { showToast } from './ui.js';
 
 const PROXY_URL = '/api/analyze';
+const MODELS_PROXY_URL = '/api/models';
+
+export const PREFERRED_VISION_MODELS = [
+  'gemini-3.1-flash-lite',
+  'gemini-3-flash-preview',
+  'gemini-3.5-flash',
+  'gemini-3.8-flash',
+  'gemini-3.7-flash',
+  'gemini-flash-latest'
+];
+
+let _cachedModels = null;
+let _cachedModelsTimestamp = 0;
+const MODELS_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+export async function getAvailableModels(forceRefresh = false) {
+  const now = Date.now();
+  if (!forceRefresh && _cachedModels && (now - _cachedModelsTimestamp < MODELS_CACHE_TTL_MS)) {
+    return _cachedModels;
+  }
+
+  try {
+    const response = await fetchWithTimeout(MODELS_PROXY_URL, {
+      method: 'GET',
+      timeout: 10000
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch models: HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    let models = [];
+    if (Array.isArray(data)) {
+      models = data.map(m => (typeof m === 'string' ? m : m.id || m.name)).filter(Boolean);
+    } else if (Array.isArray(data?.data)) {
+      models = data.data.map(m => m.id || m.name).filter(Boolean);
+    } else if (Array.isArray(data?.models)) {
+      models = data.models.map(m => (typeof m === 'string' ? m : m.id || m.name)).filter(Boolean);
+    }
+
+    if (models.length > 0) {
+      _cachedModels = models;
+      _cachedModelsTimestamp = now;
+      return models;
+    }
+  } catch (err) {
+    console.warn('[AI Models] Could not load available models list:', err.message);
+  }
+
+  return _cachedModels || [];
+}
+
+export function resolveFallbackModel(currentModel, availableModels = []) {
+  if (!availableModels || availableModels.length === 0) {
+    return 'gemini-3.1-flash-lite';
+  }
+
+  // If current model is available, keep it
+  if (currentModel && availableModels.includes(currentModel)) {
+    return currentModel;
+  }
+
+  // Pick the first available model from our prioritized vision list
+  for (const preferred of PREFERRED_VISION_MODELS) {
+    if (availableModels.includes(preferred) && preferred !== currentModel) {
+      return preferred;
+    }
+  }
+
+  // Pick any model matching keywords
+  const keywords = ['flash', 'gemini', 'claude', 'qwen', 'gpt'];
+  for (const kw of keywords) {
+    const match = availableModels.find(m => m.toLowerCase().includes(kw) && m !== currentModel);
+    if (match) return match;
+  }
+
+  // Pick the first alternative model
+  const alt = availableModels.find(m => m !== currentModel);
+  return alt || availableModels[0] || 'gemini-3.1-flash-lite';
+}
 
 async function fetchWithTimeout(resource, options = {}) {
-  const { timeout = 20000 } = options;
+  const { timeout = 40000 } = options;
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
 
@@ -23,12 +105,7 @@ async function fetchWithTimeout(resource, options = {}) {
   }
 }
 
-export async function analyzeFood(base64DataUrl) {
-  const model = state.modelName || 'gemini-3.5-flash';
-
-  // Strip the data URL prefix for the API
-  const base64Image = base64DataUrl.replace(/^data:image\/\w+;base64,/, '');
-
+async function sendAnalyzeRequest(base64Image, model) {
   const payload = {
     model,
     response_format: { type: 'json_object' },
@@ -66,16 +143,58 @@ Example response:
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(payload),
-    timeout: 25000
+    timeout: 45000
   });
 
   if (!response.ok) {
     const errText = await response.text();
-    console.error('[AI Scan] API error response:', errText);
-    throw new Error(`API error ${response.status}: ${errText.slice(0, 120)}`);
+    console.error(`[AI Scan] API error response (model: ${model}):`, errText);
+    const err = new Error(`API error ${response.status}: ${errText.slice(0, 120)}`);
+    err.status = response.status;
+    err.body = errText;
+    throw err;
   }
 
-  const data = await response.json();
+  return response.json();
+}
+
+export async function analyzeFood(base64DataUrl) {
+  let model = state.modelName || 'gemini-3.1-flash-lite';
+  const base64Image = base64DataUrl.replace(/^data:image\/\w+;base64,/, '');
+
+  let data;
+  try {
+    data = await sendAnalyzeRequest(base64Image, model);
+  } catch (err) {
+    // Check if the error indicates that the model is unavailable or invalid
+    const isModelError = 
+      (err.status === 401 && err.body && /invalid model/i.test(err.body)) ||
+      err.status === 404 ||
+      (err.body && /invalid model|model not found|unknown model|model unavailable/i.test(err.body));
+
+    if (isModelError) {
+      console.warn(`[AI Scan] Model "${model}" is unavailable (${err.message}). Fetching available models for fallback...`);
+      const availableModels = await getAvailableModels(true);
+      const fallbackModel = resolveFallbackModel(model, availableModels);
+
+      if (fallbackModel && fallbackModel !== model) {
+        console.log(`[AI Scan] Switching to fallback model "${fallbackModel}"...`);
+        showToast(`Model "${model}" unavailable. Switched to "${fallbackModel}"`, 'info');
+
+        // Persist the fallback model
+        state.modelName = fallbackModel;
+        saveAiSettings();
+
+        // Retry analysis with the fallback model
+        data = await sendAnalyzeRequest(base64Image, fallbackModel);
+      } else {
+        throw err;
+      }
+    } else {
+      throw err;
+    }
+  }
+
   console.log('[AI Scan] Full API response:', JSON.stringify(data, null, 2));
 
   const rawContent = data?.choices?.[0]?.message?.content || '';
