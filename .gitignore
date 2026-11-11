@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+.rtk/
+CLAUDE.md
+design/
+
+# Cloudflare Worker
+r2-worker/node_modules/
+r2-worker/.wrangler/
+r2-worker/.dev.vars*
+!r2-worker/.dev.vars.example

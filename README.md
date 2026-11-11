@@ -5,101 +5,138 @@
 [![JavaScript](https://img.shields.io/badge/javascript-%23F7DF1E.svg?style=flat&logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 [![CSS3](https://img.shields.io/badge/css3-%231572B6.svg?style=flat&logo=css3&logoColor=white)](https://www.w3.org/TR/css-2020/)
 
-**KcalKount** is a modern, premium, glassmorphism-inspired health and fitness application. It combines state-of-the-art visual tracking with scientific calculations and artificial intelligence to make diet management interactive, precise, and effortless.
+**KcalKount** is a modern, responsive, privacy-first health and nutrition web application built as a Vanilla JavaScript SPA. It blends clean design with scientific TDEE calculations and AI-assisted food recognition to make daily calorie and macro tracking fast, interactive, and effortless.
 
 ---
 
 ## ✨ Features
 
-### 1. 📊 Fluid Glassmorphism Dashboard
-- **Circular Progress Metrics**: Instant visualization of calorie intake vs. your target budget.
-- **Macronutrient Budgets**: Real-time breakdown of remaining and consumed Proteins, Carbohydrates, and Fats.
-- **Calorie Warning Banner**: Active notification system if you exceed your daily calorie goal.
-- **Responsive Layout**: Designed for seamless transitions between desktop monitors, tablets, and mobile screens.
+### 1. 📊 Modern Interactive Dashboard
+- **Circular Progress Metrics**: Real-time SVG progress ring displaying consumed calories against your daily target budget.
+- **Macronutrient Tracking**: Live macro breakdown for Protein, Carbohydrates, and Fats with visual rings and goal thresholds.
+- **⚡ Quick-Log Input**: Log meals directly from the dashboard keyboard in seconds (e.g. typing `Banana 105` and pressing Enter).
+- **Calorie Warning Banner**: Immediate visual alert if you exceed your daily calorie goal.
+- **Theme Support**: Seamless Dark and Light theme toggle with custom CSS design tokens.
 
 ### 2. 🧠 Smart BMR & TDEE Calculator
-- Uses the scientifically backed **Mifflin-St Jeor Equation** to calculate your Base Metabolic Rate (BMR).
-- **Activity Multipliers**: Adjust settings for Sedentary, Lightly Active, Moderately Active, Very Active, or Extra Active lifestyles.
-- **Goal Alignment**: Easily set targets for weight loss (calorie deficit), weight maintenance, or muscle gain (calorie surplus).
-- Supports manual override if you have custom calorie goals provided by a nutritionist.
+- Scientific **Mifflin-St Jeor Equation** calculates your Basal Metabolic Rate (BMR) and Total Daily Energy Expenditure (TDEE).
+- **Activity Multipliers**: Configurable for Sedentary, Lightly Active, Moderately Active, Very Active, or Extra Active lifestyles.
+- **Goal Alignment**: Custom caloric adjustments for weight loss (deficit), weight maintenance, or muscle gain (surplus).
+- **Manual Goal Option**: Set custom calorie targets directly if recommended by your nutritionist or trainer.
 
-### 3. 📷 AI-Powered Food Recognition (Scale Calibrated)
-- **Live Stream Scanning**: Connects to your native device camera or permits uploading a gallery image.
-- **Calibrated Vision AI**: Recognizes standard scale objects in the camera frame (like forks, cups, plates, hands, and chopsticks) to calculate portion sizes accurately.
-- **Macro Distribution Engine**: Powered by Gemini LLM models through a proxy setup (`/api/analyze`) to return clean JSON data including calories, protein, carbs, and fat.
+### 3. 📷 AI Food Scanner (Vision AI)
+- **Camera & Gallery**: Live video camera stream capture with mobile-optimized full-screen viewfinder, flashlight toggle, and image upload fallback.
+- **Portion & Scale Reference**: System prompt tuned to gauge scale using reference objects (cutlery, hands, plates, bowls) for accurate portion estimations.
+- **Smart JSON Mode Extraction**: Connects via `/api/analyze` to Gemini models (`gemini-3.1-flash-lite`, etc.) with robust JSON parsing.
+- **Telemetry & Accuracy Log**: Tracks difference (deltas) between AI predictions and user-verified nutrition edits (stores up to 50 logs).
 
-### 4. 📈 Interactive Analytics & History
-- **Trend Charts**: Beautiful interactive charts using [ApexCharts](https://apexcharts.com/) that track caloric intake trends.
-- **Historical Ranges**: Select between 7-day and 30-day views to monitor your consistency over time.
-- **Macro Distribution Ratios**: Understand your dietary structure with dynamic visual graphs.
+### 4. 📈 Analytics & Trends
+- **Interactive Charting**: Built with [ApexCharts](https://apexcharts.com/) featuring calorie target annotation lines and responsive axes.
+- **Flexible Ranges**: Switch between 7-day and 30-day historical time windows.
+- **Summary Metrics**: Instant calculation of average daily intake, goal compliance rate, and maximum/minimum calorie days.
 
-### 5. ⭐️ Favorites Library & Entries Management
-- **One-Click Logger**: Save meals you consume regularly to log them in under a second.
-- **Searchable Inventory**: Filter through saved meals with a lightning-fast fuzzy search.
-- **Fully Customizable Logs**: Edit, duplicate, or delete daily entries directly inside the log feed.
+### 5. ⭐️ Favorites Library & Daily Logs
+- **One-Click Quick Log**: Save frequent meals to Favorites and log them in a single tap.
+- **Searchable Favorites**: Real-time filtering and search for saved meals.
+- **Daily Meal Management**: Grouped meal listings with inline macro pills, quick editing, deleting, and favorite toggling.
 
-### 6. 💾 Local-First & Data Security
-- No login required! All data is saved securely in your browser's `localStorage`.
-- **JSON Backup Engine**: Seamlessly export your entire history, settings, and favorites to a file, or restore them onto another device.
+### 6. 💾 Local-First & Data Privacy
+- **Zero Login Friction**: No sign-up or remote user database required. Data resides locally in your browser.
+- **Full Data Portability**: Comprehensive JSON Export and Import for seamless device migration and offline backups.
 
 ---
 
-## 🛠️ Tech Stack
+## 🏛️ Architecture & Design Patterns
 
-- **Core**: Vanilla HTML5, CSS Custom Properties (Variables)
-- **Logic**: ES6+ JavaScript Modules
-- **Bundler / Server**: [Vite](https://vitejs.dev/)
-- **Charts**: [ApexCharts](https://apexcharts.com/)
-- **Image Processing**: [browser-image-compression](https://www.npmjs.com/package/browser-image-compression), [heic2any](https://www.npmjs.com/package/heic2any)
+The codebase is engineered around **SOLID Principles** and **GRASP Patterns** without heavy front-end framework bloat:
+
+- **Single Responsibility Principle (SRP)**: Separated domain concerns into dedicated services (`MealService`, `FavoriteService`, `GoalService`, `TelemetryService`, `StorageService`).
+- **Observer / Indirection (EventBus)**: `src/core/events.js` decouples domain model changes from UI render routines.
+- **Dependency Inversion Principle (DIP)**: `StorageService` abstracts `localStorage` access and batches rapid writes via debouncing.
+- **Controller Pattern (GRASP)**: `app.js` acts as the Application Controller, orchestrating UI events and delegating business operations to domain services.
+- **Information Expert & Creator**: Domain services encapsulate entity creation, validation, filtering, and summary math.
 
 ---
 
 ## 📁 Project Structure
 
 ```text
-├── index.html                  # Core single-page application structure
-├── style.css                   # Premium CSS Variables & Glassmorphism Design System
-├── app.js                      # Main App controller and event hub
-├── package.json                # Project dependencies and startup scripts
+├── index.html                  # Single-page application markup
+├── style.css                   # Custom CSS variables, themes, and layout styles
+├── app.js                      # Application Controller (DOM events & orchestration)
+├── package.json                # Project scripts and dependencies
 ├── vite.config.js              # Vite configuration
-└── src/                        # Codebase source directory
-    ├── ai.js                   # Handles AI API requests, timeouts, and JSON parser recovery
-    ├── backup.js               # Code for JSON exporting and importing state files
-    ├── calculator.js           # Mifflin-St Jeor math for BMR/TDEE calculation
-    ├── camera.js               # Capturing, styling, and compressing raw camera/gallery pictures
-    ├── chart.js                # Instantiating and rendering dynamic ApexCharts 
-    ├── state.js                # Core reactive state machine and storage adapters
-    └── ui.js                   # High-performance DOM painting, modals, toast, and charts
+├── vite-plugin-ai-proxy.js     # Dev-server proxy for Gemini AI endpoint
+└── src/
+    ├── core/
+    │   ├── events.js           # EventBus for decoupled domain-to-view notifications
+    │   └── storage.js          # StorageService abstraction with debouncing
+    ├── domain/
+    │   ├── MealService.js      # Meal CRUD, entity creation & daily summaries
+    │   ├── FavoriteService.js  # Favorites management & duplicate detection
+    │   └── GoalService.js      # TDEE & calorie budget calculations
+    ├── ai.js                   # Gemini API food analysis & JSON extraction
+    ├── backup.js               # BackupService for JSON export/import
+    ├── calculator.js           # Mifflin-St Jeor math formula
+    ├── camera.js               # Camera stream, HEIC conversion & image compression
+    ├── chart.js                # ApexCharts wrapper and configuration
+    ├── state.js                # Reactive state facade
+    ├── telemetry.js            # TelemetryService for scan prediction tracking
+    └── ui.js                   # DOM rendering, modals, progress rings, and toasts
 ```
+
+---
+
+## 🛠️ Tech Stack
+
+- **Core**: Vanilla HTML5, Modern CSS (Custom Properties, Themes)
+- **Logic**: ES6+ JavaScript Modules
+- **Bundler & Dev Server**: [Vite](https://vitejs.dev/)
+- **Visuals**: [ApexCharts](https://apexcharts.com/)
+- **Image Handling**: [browser-image-compression](https://www.npmjs.com/package/browser-image-compression), [heic2any](https://www.npmjs.com/package/heic2any)
 
 ---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-Make sure you have [Node.js](https://nodejs.org/) installed on your computer.
+- [Node.js](https://nodejs.org/) (v18 or higher recommended)
+- `npm`
 
 ### Installation
-1. Clone the project files into your local directory.
-2. Open your terminal in the directory and run:
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/narawit/kcal-kount.git
+   cd kcal-kount
+   ```
+2. Install dependencies:
    ```bash
    npm install
    ```
 
-### Running the App
-Start the Vite local development server:
+### Running Locally
+Start the Vite development server:
 ```bash
 npm run dev
 ```
-Open the output URL (usually `http://localhost:5173`) in your browser.
+Open `http://localhost:5173` in your browser.
 
-### Configuring AI Scanning
-To enable food scanning, the app contacts a `/api/analyze` proxy endpoint defined in `vite.config.js` or matching environment settings.
-1. Duplicate `.env.example` to a new file named `.env`:
+### Building for Production
+```bash
+npm run build
+npm run preview
+```
+
+### Configuring AI Food Scanner
+1. Copy the environment template:
    ```bash
    cp .env.example .env
    ```
-2. Fill in your API details and keys as specified inside the file.
+2. Set your Google AI Studio / Gemini API key:
+   ```env
+   AI_API_KEY=your_actual_gemini_api_key_here
+   ```
+3. During development, Vite automatically proxies `/api/analyze` and `/api/models` to Google's OpenAI-compatible endpoint.
 
 ---
 
